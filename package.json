@@ -1,25 +1,33 @@
 {
-  "name": "tiktok-bot",
+  "name": "tiknova",
   "version": "1.0.0",
+  "description": "TikTok Live Bot with Electron + React + TTS",
   "main": "main.js",
-  "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "npx concurrently \"node signServer.js\" \"npm run vite\" \"npm run electron\"",
+    "vite": "vite",
     "electron": "electron .",
-    "start": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\"",
-    "build": "vite build"
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"No tests configured\""
   },
+  "author": "Keith Jeter",
+  "license": "MIT",
   "dependencies": {
-    "play-sound": "^1.1.5",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "tiktok-live-connector": "^1.0.0"
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "electron": "^29.0.0",
+    "express": "^4.18.2",
+    "play-sound": "^1.1.6",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tiktok-live-connector": "^2.0.7-beta1"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.0.0",
+    "@vitejs/plugin-react": "^5.0.2",
     "concurrently": "^8.2.2",
-    "electron": "^31.0.0",
-    "vite": "^5.0.0",
-    "wait-on": "^7.2.0"
+    "vite": "^5.4.10"
   }
 }

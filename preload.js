@@ -1,16 +1,15 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-contextBridge.exposeInMainWorld("electronAPI", {
-  // Status + Events
-  onTiktokStatus: (callback) =>
-    ipcRenderer.on("tiktok-status", (_event, data) => callback(_event, data)),
-  onTiktokEvent: (callback) =>
-    ipcRenderer.on("tiktok-event", (_event, data) => callback(_event, data)),
+console.log("✅ Preload loaded");
 
-  // Test actions
+contextBridge.exposeInMainWorld("electronAPI", {
+  onTiktokEvent: (callback) =>
+    ipcRenderer.on("tiktok-event", (event, data) => {
+      console.log("📡 Forwarding event to React:", data); // debug
+      callback(data);
+    }),
+  onTiktokStatus: (callback) =>
+    ipcRenderer.on("tiktok-status", (event, data) => callback(data)),
   playSound: (file) => ipcRenderer.send("play-sound", file),
   speak: (text) => ipcRenderer.send("speak-text", text),
-
-  // ✅ Voice toggle
-  setVoice: (voice) => ipcRenderer.send("set-voice", voice),
 });

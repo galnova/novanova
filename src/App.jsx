@@ -1,30 +1,44 @@
 import React, { useEffect, useState } from "react";
+import "./App.css";
 
 function App() {
   const [events, setEvents] = useState([]);
   const [connected, setConnected] = useState(false);
-  const [voice, setVoice] = useState("Zira"); // 👩 default
+  const [voice, setVoice] = useState("Zira");
 
   useEffect(() => {
-    window.electronAPI?.onTiktokEvent((_event, data) => {
+    // TikTok events from main
+    window.electronAPI?.onTiktokEvent((data) => {
+      console.log("📩 Got event in React:", data);
       setEvents((prev) => [...prev.slice(-50), data]);
     });
 
-    window.electronAPI?.onTiktokStatus((_event, data) => {
+    // Connection status
+    window.electronAPI?.onTiktokStatus((data) => {
+      console.log("🔌 Status event in React:", data);
       setConnected(data.connected);
     });
   }, []);
 
+  // Fake test events
   const addTestEvent = (type, msg, sound = null, speak = false) => {
-    setEvents((prev) => [...prev.slice(-50), { type, msg }]);
-    if (sound) window.electronAPI.playSound(sound);
-    if (speak) window.electronAPI.speak(msg);
+    const event = { type, msg };
+    setEvents((prev) => [...prev.slice(-50), event]);
+
+    // Send through IPC to play sound / speak
+    if (sound) {
+      window.electronAPI?.playSound(sound);
+    }
+    if (speak) {
+      window.electronAPI?.speak(msg);
+    }
   };
 
+  // Toggle voice (frontend only — backend is locked to Zira right now)
   const toggleVoice = () => {
     const newVoice = voice === "Zira" ? "David" : "Zira";
     setVoice(newVoice);
-    window.electronAPI.setVoice(newVoice);
+    window.electronAPI?.setVoice(newVoice);
   };
 
   return (
@@ -37,16 +51,9 @@ function App() {
       <h1>TikTok Live Bot</h1>
 
       {/* Voice Toggle */}
-      <div className="voice-toggle">
-        <button onClick={toggleVoice}>
-          Switch to {voice === "Zira" ? "David (Male)" : "Zira (Female)"}
-        </button>
-      </div>
-
-      {/* Now Playing Banner */}
-      <div className="now-playing">
-        🎤 Now using {voice === "Zira" ? "Zira (Female)" : "David (Male)"} voice
-      </div>
+      <button onClick={toggleVoice} className="voice-toggle">
+        🎤 Current Voice: {voice}
+      </button>
 
       {/* Test buttons */}
       <div className="test-controls">
@@ -92,11 +99,7 @@ function App() {
         </button>
         <button
           onClick={() =>
-            addTestEvent(
-              "like",
-              "User321 liked the stream ❤️",
-              "sounds/like.mp3"
-            )
+            addTestEvent("like", "User321 liked ❤️", "sounds/like.mp3")
           }
         >
           Test Like
@@ -108,10 +111,9 @@ function App() {
         >
           Test Follow
         </button>
-        {/* ✅ Test Share */}
         <button
           onClick={() =>
-            addTestEvent("share", "User888 shared the stream 🔗", "sounds/share.mp3")
+            addTestEvent("share", "User111 shared! 🔄", "sounds/share.mp3")
           }
         >
           Test Share

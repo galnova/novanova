@@ -1,23 +1,28 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
-const path = require("path");
-const { WebcastPushConnection } = require("tiktok-live-connector");
-const { exec } = require("child_process");
-const player = require("play-sound")();
+import { app, BrowserWindow, ipcMain } from "electron";
+import path from "path";
+import { fileURLToPath } from "url";
+import { WebcastPushConnection } from "tiktok-live-connector";
+import { exec } from "child_process";
+import player from "play-sound";
+import dotenv from "dotenv";
 
+dotenv.config();
 process.env["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "true";
 
-// --- Config ---
-let TTS_VOICE = "Microsoft Zira Desktop"; // 👩 Female by default
-// Other option: "Microsoft David Desktop" (👨 Male)
+// ESM __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// --- Helpers ---
+// --- Config ---
+let TTS_VOICE = "Microsoft Zira Desktop"; // 👩 Default
 let speechQueue = [];
 let isSpeaking = false;
+const audioPlayer = player();
 
 function speak(text) {
   return new Promise((resolve) => {
     exec(
-      `powershell -Command "Add-Type –AssemblyName System.Speech; ` +
+      `powershell -Command "Add-Type -AssemblyName System.Speech; ` +
         `$speak = New-Object System.Speech.Synthesis.SpeechSynthesizer; ` +
         `$speak.SelectVoice('${TTS_VOICE}'); ` +
         `$speak.Speak('${text}');"`,
@@ -32,7 +37,7 @@ function speak(text) {
 function playSound(file) {
   const fullPath = path.join(__dirname, file);
   return new Promise((resolve) => {
-    player.play(fullPath, (err) => {
+    audioPlayer.play(fullPath, (err) => {
       if (err) console.error("Error playing sound:", err);
       resolve();
     });
@@ -44,7 +49,6 @@ async function processQueue() {
   isSpeaking = true;
 
   const item = speechQueue.shift();
-
   if (item.startsWith("SOUND::")) {
     const file = item.split("::")[1];
     await playSound(file);
@@ -62,61 +66,70 @@ function enqueueSpeech(text) {
   processQueue();
 }
 
+// --- Window ---
 function createWindow() {
-  const win = new BrowserWindow({
-    width: 1000,
-    height: 700,
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-    },
-  });
+console.log("🔎 Preload path:", path.resolve(__dirname, "preload.js"));
+
+const win = new BrowserWindow({
+  width: 1000,
+  height: 700,
+  webPreferences: {
+    contextIsolation: true,
+    enableRemoteModule: false,
+    nodeIntegration: false,
+    preload: path.resolve(__dirname, "preload.js"),
+  },
+});
 
   if (!app.isPackaged) {
-    win.loadURL("http://localhost:5173");
+    win.loadURL("http://localhost:5173"); // Vite dev server
   } else {
     win.loadFile(path.join(__dirname, "dist", "index.html"));
   }
 
   // --- TikTok Connection ---
-  const username = "yoyo_savagemike"; // 👈 your TikTok username
-  const tiktok = new WebcastPushConnection(username);
+  const username = "masterbedwars"; // 👈 your TikTok username
+  const cookies = process.env.TIKTOK_COOKIES;
+  if (!cookies) {
+    console.error("❌ No cookies found in .env (TIKTOK_COOKIES=...)");
+  }
+
+  const tiktok = new WebcastPushConnection(username, {
+    requestOptions: {
+      headers: { cookie: cookies },
+    },
+    signApiUrl: "http://localhost:8080/sign",
+  });
 
   tiktok.on("connected", (state) => {
-    console.log("✅ Connected to TikTok room:", state.roomId);
+    console.log("✅ Connected:", state.roomId);
     win.webContents.send("tiktok-status", { connected: true });
   });
 
   tiktok.on("disconnected", () => {
-    console.log("⚠️ Disconnected from TikTok");
+    console.log("⚠️ Disconnected");
     win.webContents.send("tiktok-status", { connected: false });
   });
 
-  // Chat
   tiktok.on("chat", (data) => {
     const name = data.nickname || data.uniqueId;
     const msg = `${name}: ${data.comment}`;
     win.webContents.send("tiktok-event", { msg, type: "chat" });
-
     enqueueSpeech(`${name} says ${data.comment}`);
   });
 
-  // Like
   tiktok.on("like", (data) => {
-    const msg = `${data.uniqueId} liked the stream (${data.likeCount} likes)`;
+    const msg = `${data.uniqueId} liked (${data.likeCount} likes)`;
     win.webContents.send("tiktok-event", { msg, type: "like" });
-
     enqueueSpeech(`SOUND::sounds/like.mp3`);
   });
 
-  // Follow
   tiktok.on("follow", (data) => {
     const msg = `${data.uniqueId} followed!`;
     win.webContents.send("tiktok-event", { msg, type: "follow" });
-
     enqueueSpeech(`SOUND::sounds/follow.mp3`);
   });
 
-  // Gift
   tiktok.on("gift", (data) => {
     let msg = `${data.uniqueId} sent ${data.giftName}`;
     let soundFile = "sounds/small-gift.mp3";
@@ -133,17 +146,14 @@ function createWindow() {
     enqueueSpeech(`SOUND::${soundFile}`);
   });
 
-  // ✅ Share
   tiktok.on("share", (data) => {
     const msg = `${data.uniqueId} shared the stream!`;
     win.webContents.send("tiktok-event", { msg, type: "share" });
-
     enqueueSpeech(`SOUND::sounds/share.mp3`);
   });
 
-  // Connect
   tiktok.connect().catch((err) => {
-    console.error("❌ Failed to connect:", err);
+    console.error("❌ Failed:", err);
     const msg = `❌ Failed to connect: ${err.message || err}`;
     win.webContents.send("tiktok-event", { msg, type: "error" });
     win.webContents.send("tiktok-status", { connected: false });
@@ -151,31 +161,21 @@ function createWindow() {
 }
 
 // --- IPC ---
-ipcMain.on("play-sound", (_event, file) => {
-  enqueueSpeech(`SOUND::${file}`);
-});
-
-ipcMain.on("speak-text", (_event, text) => {
-  enqueueSpeech(text);
-});
-
-// ✅ Voice toggle
+ipcMain.on("play-sound", (_event, file) => enqueueSpeech(`SOUND::${file}`));
+ipcMain.on("speak-text", (_event, text) => enqueueSpeech(text));
 ipcMain.on("set-voice", (_event, voice) => {
-  if (voice === "Zira") {
-    TTS_VOICE = "Microsoft Zira Desktop";
-  } else if (voice === "David") {
-    TTS_VOICE = "Microsoft David Desktop";
-  }
+  if (voice === "Zira") TTS_VOICE = "Microsoft Zira Desktop";
+  if (voice === "David") TTS_VOICE = "Microsoft David Desktop";
   console.log(`🔊 Voice changed to: ${TTS_VOICE}`);
 });
 
+// --- App lifecycle ---
 app.whenReady().then(() => {
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
-
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
