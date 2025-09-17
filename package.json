@@ -4,14 +4,15 @@
   "description": "TikTok Live Bot with Electron + React + TTS",
   "main": "main.js",
   "type": "module",
-  "scripts": {
-    "dev": "npx concurrently \"node signServer.js\" \"npm run vite\" \"npm run electron\"",
-    "vite": "vite",
-    "electron": "electron .",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test": "echo \"No tests configured\""
-  },
+"scripts": {
+  "dev": "concurrently -k \"node signServer.js\" \"vite\" \"npx wait-on http://localhost:5173 && electron .\"",
+  "vite": "vite",
+  "electron": "electron .",
+  "build": "vite build",
+  "preview": "vite preview",
+  "start": "electron .",
+  "test": "echo \"No tests configured\""
+},
   "author": "Keith Jeter",
   "license": "MIT",
   "dependencies": {

@@ -234,26 +234,89 @@ h1 {
   border-left: 4px solid #22c55e;
 }
 
-/* button.mute-toggle {
-  background: #ef4444;
+/* --- Username Input --- */
+.username-input {
   display: flex;
-  width: fit-content;
+  justify-content: center;
+  align-items: center;
+  margin: 16px 0 24px 0;
+  gap: 10px;
+}
+
+.username-input input {
+  padding: 12px;
+  font-size: 15px;
+  border-radius: 6px;
+  border: 1px solid #00c8be;
+  width: 240px;
+  background: #111;
   color: #fff;
+  outline: none;
+  box-shadow: 0 0 6px rgba(0, 242, 234, 0.3);
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.username-input input:focus {
+  border: 1px solid #00f2ea;
+  box-shadow: 0 0 10px rgba(0, 242, 234, 0.6);
+}
+
+.username-input button {
   border: none;
   padding: 12px 18px;
   border-radius: 6px;
   font-size: 15px;
   font-weight: bold;
   cursor: pointer;
-  margin-left: 10px;
   transition: background 0.2s ease, transform 0.1s ease;
-} */
-
-/* button.mute-toggle:hover {
-  background: #dc2626;
-  transform: scale(1.05);
+  background: #facc15; /* yellow default */
+  color: #111;
 }
 
-button.mute-toggle:active {
+/* hover effect */
+.username-input button:hover {
+  background: #eab308;
+  /* transform: scale(1.05); */
+}
+
+/* pressed effect */
+/* .username-input button:active {
   transform: scale(0.95);
 } */
+
+/* Connected state */
+.username-input button.connected {
+  background: #22c55e; /* green */
+  color: #fff;
+}
+
+/* .username-input button.connected:hover {
+  background: #16a34a;
+} */
+
+/* Error state for Connect button */
+.username-input button.error {
+  background: #ccc;
+  color: #000;
+}
+
+/* .username-input button.error:hover {
+  background: #dc2626;
+} */
+
+/* Error banner under the input */
+.error-banner {
+  margin-top: 10px;
+  padding: 10px;
+  background: #4d1d1d;
+  color: #fab8b8;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: bold;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}

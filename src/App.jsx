@@ -5,19 +5,28 @@ function App() {
   const [events, setEvents] = useState([]);
   const [connected, setConnected] = useState(false);
   const [voice, setVoice] = useState("Zira");
-  const [muted, setMuted] = useState(false); // 👈 new state
+  const [muted, setMuted] = useState(false);
+  const [username, setUsername] = useState("");
+  const [error, setError] = useState(null); // 👈 error state
 
   useEffect(() => {
     // TikTok events from main
     window.electronAPI?.onTiktokEvent((data) => {
       console.log("📩 Got event in React:", data);
-      setEvents((prev) => [data, ...prev].slice(0, 50)); // 👈 newest first
+      setEvents((prev) => [data, ...prev].slice(0, 50));
+
+      if (data.type === "error") {
+        setError(data.msg); // 👈 show error
+      }
     });
 
     // Connection status
     window.electronAPI?.onTiktokStatus((data) => {
       console.log("🔌 Status event in React:", data);
       setConnected(data.connected);
+      if (data.connected) {
+        setError(null); // 👈 clear error once connected
+      }
     });
   }, []);
 
@@ -48,6 +57,15 @@ function App() {
     window.electronAPI?.setMute(newMuted);
   };
 
+  // Connect with username
+  const handleConnect = () => {
+    if (username.trim()) {
+      console.log("➡️ Sending username to main:", username);
+      window.electronAPI?.connectTiktok(username.trim());
+      setError(null); // reset error on new attempt
+    }
+  };
+
   return (
     <div className="App">
       {/* Status Bar */}
@@ -56,6 +74,27 @@ function App() {
       </div>
 
       <h1>TikTok Live Bot</h1>
+
+      {/* Username Input */}
+      <div className="username-input">
+        <input
+          type="text"
+          placeholder="Enter TikTok username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <button
+          onClick={handleConnect}
+          className={
+            error ? "error" : connected ? "connected" : ""
+          } // 👈 dynamic class
+        >
+          {error ? "❌ Failed" : connected ? "✅ Connected" : "Connect"}
+        </button>
+      </div>
+
+      {/* Error Banner */}
+      {error && <div className="error-banner">{error}</div>}
 
       {/* Voice & Mute Controls */}
       <div className="controls">
