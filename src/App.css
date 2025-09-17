@@ -12,9 +12,45 @@
 h1 {
   color: #00f2ea;
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 0;
   font-weight: bold;
+  padding-bottom: 24px;
   text-shadow: 0 0 6px rgba(0, 242, 234, 0.6);
+  border-bottom: solid 1px #00c8be;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center; /* Centers horizontally */
+  align-items: center;   /* Centers vertically */
+  gap: 10px;
+  margin: 24px 0 24px 0;
+}
+
+.controls button {
+    background: #facc15; ;
+    color: #111;
+    border: none;
+    padding: 14px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.controls button:hover {
+  background: #eab308;
+}
+
+.controls button.mute-toggle {
+  background: #374151; /* dark gray (Tailwind gray-700) */
+  color: #fff;         /* white text for contrast */
+}
+
+.controls button.mute-toggle:hover {
+  background: #1f2937; /* even darker on hover */
 }
 
 .test-controls {
@@ -23,7 +59,7 @@ h1 {
   justify-content: center; /* Centers horizontally */
   align-items: center;   /* Centers vertically */
   gap: 10px;
-  margin-bottom: 15px;
+  margin: 0 0 24px 0;
 }
 
 .test-controls button {
@@ -45,6 +81,7 @@ h1 {
 .events {
   flex: 1;
   overflow-y: auto;
+  overflow: hidden;
 }
 
 .event {
@@ -171,13 +208,12 @@ h1 {
 }
 
 /* Voice Toggle */
-.voice-toggle {
-  text-align: center;
-  margin-bottom: 16px;
-}
 
-.voice-toggle button {
-  background: #facc15; /* yellow for contrast */
+/* button.voice-toggle  {
+  background: #facc15; 
+  display: inline-block; 
+  width: auto;  
+  margin: 24px auto 24px auto; 
   color: #111;
   border: none;
   padding: 12px 18px;
@@ -186,15 +222,38 @@ h1 {
   font-weight: bold;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.1s ease;
-}
+} */
 
-.voice-toggle button:hover {
+/* button.voice-toggle:hover {
   background: #eab308;
-  transform: scale(1.05);
-}
+} */
 
 /* New Share Event */
 .event.share {
   background: #1a2d1a;
   border-left: 4px solid #22c55e;
 }
+
+/* button.mute-toggle {
+  background: #ef4444;
+  display: flex;
+  width: fit-content;
+  color: #fff;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: background 0.2s ease, transform 0.1s ease;
+} */
+
+/* button.mute-toggle:hover {
+  background: #dc2626;
+  transform: scale(1.05);
+}
+
+button.mute-toggle:active {
+  transform: scale(0.95);
+} */

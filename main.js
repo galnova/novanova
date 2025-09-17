@@ -18,6 +18,7 @@ let TTS_VOICE = "Microsoft Zira Desktop"; // 👩 Default
 let speechQueue = [];
 let isSpeaking = false;
 const audioPlayer = player();
+let isMuted = false; // 🔇 mute flag
 
 function speak(text) {
   return new Promise((resolve) => {
@@ -62,24 +63,28 @@ async function processQueue() {
 }
 
 function enqueueSpeech(text) {
+  if (isMuted) {                       // 🔇 skip if muted
+    console.log("🔇 Muted — skipping:", text);
+    return;
+  }
   speechQueue.push(text);
   processQueue();
 }
 
 // --- Window ---
 function createWindow() {
-console.log("🔎 Preload path:", path.resolve(__dirname, "preload.js"));
+  console.log("🔎 Preload path:", path.resolve(__dirname, "preload.js"));
 
-const win = new BrowserWindow({
-  width: 1000,
-  height: 700,
-  webPreferences: {
-    contextIsolation: true,
-    enableRemoteModule: false,
-    nodeIntegration: false,
-    preload: path.resolve(__dirname, "preload.js"),
-  },
-});
+  const win = new BrowserWindow({
+    width: 1000,
+    height: 700,
+    webPreferences: {
+      contextIsolation: true,
+      enableRemoteModule: false,
+      nodeIntegration: false,
+      preload: path.resolve(__dirname, "preload.js"),
+    },
+  });
 
   if (!app.isPackaged) {
     win.loadURL("http://localhost:5173"); // Vite dev server
@@ -88,7 +93,7 @@ const win = new BrowserWindow({
   }
 
   // --- TikTok Connection ---
-  const username = "masterbedwars"; // 👈 your TikTok username
+  const username = "greyvoth"; // 👈 your TikTok username
   const cookies = process.env.TIKTOK_COOKIES;
   if (!cookies) {
     console.error("❌ No cookies found in .env (TIKTOK_COOKIES=...)");
@@ -167,6 +172,10 @@ ipcMain.on("set-voice", (_event, voice) => {
   if (voice === "Zira") TTS_VOICE = "Microsoft Zira Desktop";
   if (voice === "David") TTS_VOICE = "Microsoft David Desktop";
   console.log(`🔊 Voice changed to: ${TTS_VOICE}`);
+});
+ipcMain.on("set-mute", (_event, value) => {        // 🔇 new mute IPC
+  isMuted = value;
+  console.log(isMuted ? "🔇 Muted" : "🔊 Unmuted");
 });
 
 // --- App lifecycle ---
