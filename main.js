@@ -19,6 +19,7 @@ let speechQueue = [];
 let isSpeaking = false;
 const audioPlayer = player();
 let isMuted = false; // 🔇 mute flag
+let tiktok = null;   // store current connection
 
 function speak(text) {
   return new Promise((resolve) => {
@@ -63,7 +64,7 @@ async function processQueue() {
 }
 
 function enqueueSpeech(text) {
-  if (isMuted) {                       // 🔇 skip if muted
+  if (isMuted) {
     console.log("🔇 Muted — skipping:", text);
     return;
   }
@@ -71,41 +72,32 @@ function enqueueSpeech(text) {
   processQueue();
 }
 
-// --- Window ---
-function createWindow() {
-  console.log("🔎 Preload path:", path.resolve(__dirname, "preload.js"));
-
-  const win = new BrowserWindow({
-    width: 1000,
-    height: 700,
-    webPreferences: {
-      contextIsolation: true,
-      enableRemoteModule: false,
-      nodeIntegration: false,
-      preload: path.resolve(__dirname, "preload.js"),
-    },
-  });
-
-  if (!app.isPackaged) {
-    win.loadURL("http://localhost:5173"); // Vite dev server
-  } else {
-    win.loadFile(path.join(__dirname, "dist", "index.html"));
-  }
-
-  // --- TikTok Connection ---
-  const username = "greyvoth"; // 👈 your TikTok username
+// --- TikTok connection helper ---
+function connectTiktok(win, username) {
   const cookies = process.env.TIKTOK_COOKIES;
   if (!cookies) {
     console.error("❌ No cookies found in .env (TIKTOK_COOKIES=...)");
+    return;
   }
 
-  const tiktok = new WebcastPushConnection(username, {
+  // Disconnect existing
+  if (tiktok) {
+    try {
+      tiktok.disconnect();
+    } catch (err) {
+      console.error("Error disconnecting previous connection:", err);
+    }
+    tiktok = null;
+  }
+
+  tiktok = new WebcastPushConnection(username, {
     requestOptions: {
       headers: { cookie: cookies },
     },
     signApiUrl: "http://localhost:8080/sign",
   });
 
+  // --- Event Handlers ---
   tiktok.on("connected", (state) => {
     console.log("✅ Connected:", state.roomId);
     win.webContents.send("tiktok-status", { connected: true });
@@ -165,6 +157,28 @@ function createWindow() {
   });
 }
 
+// --- Window ---
+function createWindow() {
+  console.log("🔎 Preload path:", path.resolve(__dirname, "preload.js"));
+
+  const win = new BrowserWindow({
+    width: 1000,
+    height: 700,
+    webPreferences: {
+      contextIsolation: true,
+      enableRemoteModule: false,
+      nodeIntegration: false,
+      preload: path.resolve(__dirname, "preload.js"),
+    },
+  });
+
+  if (!app.isPackaged) {
+    win.loadURL("http://localhost:5173"); // Vite dev server
+  } else {
+    win.loadFile(path.join(__dirname, "dist", "index.html"));
+  }
+}
+
 // --- IPC ---
 ipcMain.on("play-sound", (_event, file) => enqueueSpeech(`SOUND::${file}`));
 ipcMain.on("speak-text", (_event, text) => enqueueSpeech(text));
@@ -173,9 +187,16 @@ ipcMain.on("set-voice", (_event, voice) => {
   if (voice === "David") TTS_VOICE = "Microsoft David Desktop";
   console.log(`🔊 Voice changed to: ${TTS_VOICE}`);
 });
-ipcMain.on("set-mute", (_event, value) => {        // 🔇 new mute IPC
+ipcMain.on("set-mute", (_event, value) => {
   isMuted = value;
   console.log(isMuted ? "🔇 Muted" : "🔊 Unmuted");
+});
+ipcMain.on("connect-tiktok", (_event, username) => {
+  const win = BrowserWindow.getFocusedWindow();
+  if (win && username) {
+    console.log("🔗 Connecting to TikTok username:", username);
+    connectTiktok(win, username);
+  }
 });
 
 // --- App lifecycle ---
