@@ -239,6 +239,7 @@ h1 {
   font-size: 22px;
   cursor: pointer;
   margin-bottom: 15px;
+  padding: 0;
 }
 
 /* --- Overlay --- */
@@ -379,4 +380,26 @@ h1 {
 
 .sub-page button:hover {
   background: #eab308;
+}
+
+@media (max-width: 480px) { 
+  .username-group {
+  /* overflow: hidden; */
+}
+  .username-input input {
+    width: calc(100% - 22px);
+    border-radius: 6px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    padding-inline: 0;
+    padding-block: 0;
+    padding: 10px;
+  }
+
+  .username-input button {
+    border-radius: 6px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    width: 100%;
+  }
 }

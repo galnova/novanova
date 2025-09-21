@@ -3,62 +3,50 @@
 ## 🔹 Development Commands
 
 ### Start the full app (recommended)
-Runs **Vite (frontend)** + **Electron (backend)** together.  
-This is the command you’ll use most of the time.  
-```bash
+Runs **Vite (frontend)** + **Electron (backend)** together.
 npm start
-```
-- Opens the Electron window with your React UI.  
-- Connects to TikTok (`main.js` runs).  
-- Plays sounds & TTS when events happen.  
+- Opens the Electron window with your React UI.
+- Connects to TikTok (main.js runs).
+- Plays sounds & TTS when events happen.
 
 ---
 
 ### Run only the frontend (UI only, no TikTok)
-Useful if you just want to test the **React interface**.  
-```bash
+Useful if you just want to test the **React interface**.
 npm run dev
-```
-- Starts Vite dev server at [http://localhost:5173](http://localhost:5173).  
-- Opens in your browser.  
-- **Does not** connect to TikTok or play sounds (Electron isn’t running).  
+- Starts Vite dev server at http://localhost:5173
+- Opens in your browser.
+- **Does not** connect to TikTok or play sounds (Electron isn’t running).
 
 ---
 
 ### Run only Electron
-Launches the Electron shell without waiting for Vite.  
-```bash
+Launches the Electron shell without waiting for Vite.
 npm run electron
-```
-- If Vite isn’t already running → you’ll see a blank Electron screen.  
-- If Vite is running at `localhost:5173` → it will load your app UI.  
-- Mainly used for debugging.  
+- If Vite isn’t already running → you’ll see a blank Electron screen.
+- If Vite is running at localhost:5173 → it will load your app UI.
+- Mainly used for debugging.
 
 ---
 
 ## 🔹 Typical Workflow
-1. **Edit code** in React (`App.jsx`) or backend (`main.js`).  
-2. Run:  
-   ```bash
+1. Edit code in React (App.jsx) or backend (main.js).
+2. Run:
    npm start
-   ```  
-3. Wait until the Electron window shows.  
-4. Start a **TikTok livestream** from the account set in `main.js`.  
-   ```js
+3. Wait until the Electron window shows.
+4. Start a TikTok livestream from the account set in main.js.
    const tiktok = new TikTokLiveConnection("your-username");
-   ```  
-5. Confirm app status:  
-   - 🟢 Connected → bot is live.  
-   - 🔴 Disconnected → not live / username wrong.  
-6. Test buttons in the UI to confirm sound & TTS.  
+5. Confirm app status:
+   - 🟢 Connected → bot is live.
+   - 🔴 Disconnected → not live / username wrong.
+6. Test buttons in the UI to confirm sound & TTS.
 
 ---
 
 ## 🔹 Where things run
-- **Electron / main.js** → Connects to TikTok, plays sounds, runs TTS.  
-- **Vite / React frontend** → Displays UI (status bar, logs, test buttons).  
-- **Sounds** → Must be in `sounds/` folder at project root, e.g.:  
-  ```
+- Electron / main.js → Connects to TikTok, plays sounds, runs TTS.
+- Vite / React frontend → Displays UI (status bar, logs, test buttons).
+- Sounds → Must be in sounds/ folder at project root, e.g.:
   project-root/
     main.js
     preload.js
@@ -68,43 +56,103 @@ npm run electron
       small-gift.mp3
       big-gift.mp3
       multi-gift.mp3
-  ```
 
 ---
 
 ## 🔹 Quick Debug Checklist
-- If UI loads but **no TikTok events** → check username in `main.js`.  
-- If **no sounds** play → confirm `sounds/` folder exists at root.  
-- If **no speech** → check Windows PowerShell TTS is available.  
-- If Electron shows blank → make sure you started with `npm start` (not just `npm run electron`).  
+- If UI loads but no TikTok events → check username in main.js.
+- If no sounds play → confirm sounds/ folder exists at root.
+- If no speech → check Windows PowerShell TTS is available.
+- If Electron shows blank → make sure you started with npm start (not just npm run electron).
+
+---
+
+## 🔹 Git Commands (Project Workflow)
+
+### Initial setup
+git init
+git add .
+git commit -m "Initial commit - TikTok bot"
+git branch -M main
+git remote add origin <your-repo-url>
+git push -u origin main
+
+### Everyday workflow
+git status
+git add .
+git commit -m "Describe your changes here"
+git push
+git pull
+
+### Branching workflow
+git checkout -b feature/sound-queue
+git checkout main
+git merge feature/sound-queue
+git branch -d feature/sound-queue
+
+### Reset / rollback if needed
+git reset --hard
+git reset --soft HEAD~1
+git reset --hard HEAD~1
+
+---
+
+### 🔹 Troubleshooting Git
+
+#### Undo a specific file before commit
+git checkout -- filename
+
+#### Discard all local changes (dangerous)
+git reset --hard
+
+#### Merge conflicts
+- Git will mark conflict areas in files with >>>>>> and <<<<<<
+- Manually edit files to keep what you want
+- Then run:
+  git add .
+  git commit -m "Resolved merge conflict"
+
+#### Abort a merge if too messy
+git merge --abort
+
+#### Detached HEAD fix
+- If you checked out a commit directly:
+  git checkout main
+- If you want to keep changes:
+  git checkout -b new-branch
+
+#### See commit history
+git log --oneline --graph --all --decorate
+
+#### Revert a commit safely (creates a new commit)
+git revert <commit-id>
+
+#### Stash work (save without committing)
+git stash
+git pull
+git stash pop
+
+#### Delete local branch
+git branch -d branch-name
+
+#### Delete remote branch
+git push origin --delete branch-name
 
 ---
 
 ## 🔹 Packaging into a Windows .exe
-
-When you’re ready to share your bot as a standalone app:
-
-1. Install **electron-builder**:  
-   ```bash
+1. Install electron-builder:
    npm install --save-dev electron-builder
-   ```
-
-2. Add a build script to `package.json`:  
-   ```json
+2. Add build script to package.json:
    "scripts": {
      "build": "vite build",
      "dist": "electron-builder"
    }
-   ```
-
-3. Add basic build config to `package.json`:  
-   ```json
+3. Add config:
    "build": {
      "appId": "com.tiktok.bot",
      "productName": "TikTok Bot",
-     "directories": {
-       "output": "release"
-     },
+     "directories": { "output": "release" },
      "files": [
        "dist/**/*",
        "main.js",
@@ -117,31 +165,18 @@ When you’re ready to share your bot as a standalone app:
        "icon": "icon.ico"
      }
    }
-   ```
-
-4. Run:  
-   ```bash
+4. Run:
    npm run dist
-   ```
-
-5. Your `.exe` installer will appear in the `release/` folder. ✅  
+5. .exe appears in release/.
 
 ---
 
 ## 🔹 Packaging into a Mac .app (DMG)
-
-If you want to build for **macOS**:
-
-1. Install **electron-builder** (already in devDependencies if you followed Windows setup).  
-
-2. Update `package.json` build config to add mac target:  
-   ```json
+1. Update package.json build config:
    "build": {
      "appId": "com.tiktok.bot",
      "productName": "TikTok Bot",
-     "directories": {
-       "output": "release"
-     },
+     "directories": { "output": "release" },
      "files": [
        "dist/**/*",
        "main.js",
@@ -154,25 +189,27 @@ If you want to build for **macOS**:
        "icon": "icon.icns"
      }
    }
-   ```
-
-3. Run:  
-   ```bash
+2. Run:
    npm run dist
-   ```
+3. .dmg appears in release/.
 
-4. Your `.dmg` installer will appear in the `release/` folder. ✅  
-
-⚠️ Note: You must run this build **on a Mac** to produce Mac binaries. Cross-compiling from Windows → Mac is not supported by electron-builder.  
+⚠️ Must build on Mac for Mac output (cannot cross-compile from Windows).
 
 ---
 
-⚡ Pro tip: During dev, always use `npm start`. Use `npm run dist` only when you want to create a distributable installer (`.exe` on Windows or `.dmg` on Mac).
+## 🔹 npm Commands (General Reference)
+npm install
+npm install package-name
+npm install --save-dev package-name
+npm uninstall package-name
+npm update
 
+---
 
 # TikTok Bot Notes
 
-
 ## Future Improvements
-- Prevent overlapping sounds (queue sounds so they play one after another)
+- Prevent overlapping sounds (queue sounds so they play sequentially)
 - Toggle between male and female TTS voice
+- Add UI indicators for event type (like/follow/gift)
+- Option to change TikTok username from the app UI
