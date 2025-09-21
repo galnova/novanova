@@ -1,47 +1,36 @@
 # TikTok Bot – Launch & Usage Notes
 
 ## 🔹 Development Commands
-
-### Start the full app (recommended)
-Runs **Vite (frontend)** + **Electron (backend)** together.
+Start the full app (recommended)
+Runs Vite (frontend) + Electron (backend) together.
 npm start
 - Opens the Electron window with your React UI.
 - Connects to TikTok (main.js runs).
 - Plays sounds & TTS when events happen.
 
----
-
-### Run only the frontend (UI only, no TikTok)
-Useful if you just want to test the **React interface**.
+Run only the frontend (UI only, no TikTok)
+Useful if you just want to test the React interface.
 npm run dev
 - Starts Vite dev server at http://localhost:5173
 - Opens in your browser.
-- **Does not** connect to TikTok or play sounds (Electron isn’t running).
+- Does not connect to TikTok or play sounds (Electron isn’t running).
 
----
-
-### Run only Electron
+Run only Electron
 Launches the Electron shell without waiting for Vite.
 npm run electron
 - If Vite isn’t already running → you’ll see a blank Electron screen.
 - If Vite is running at localhost:5173 → it will load your app UI.
 - Mainly used for debugging.
 
----
-
 ## 🔹 Typical Workflow
 1. Edit code in React (App.jsx) or backend (main.js).
-2. Run:
-   npm start
+2. Run: npm start
 3. Wait until the Electron window shows.
-4. Start a TikTok livestream from the account set in main.js.
-   const tiktok = new TikTokLiveConnection("your-username");
+4. Start a TikTok livestream from the username entered in the app UI.
 5. Confirm app status:
    - 🟢 Connected → bot is live.
    - 🔴 Disconnected → not live / username wrong.
 6. Test buttons in the UI to confirm sound & TTS.
-
----
 
 ## 🔹 Where things run
 - Electron / main.js → Connects to TikTok, plays sounds, runs TTS.
@@ -51,25 +40,47 @@ npm run electron
     main.js
     preload.js
     sounds/
-      like.mp3
-      follow.mp3
       small-gift.mp3
       big-gift.mp3
       multi-gift.mp3
+      follow.mp3
+      share.mp3
+- Keep sounds 5 seconds or under for best results.
+- Recommend downloading short sound clips from 👉 https://www.myinstants.com/en/index/us/
 
----
+## 🔹 How to Add Your Own Sounds
+1. Go to 👉 https://www.myinstants.com/en/index/us/
+2. Find a sound effect you like (keep it short).
+3. Click Download MP3.
+4. Save it inside your project’s /sounds folder.
+5. Rename it to match one of the events:
+   - small-gift.mp3
+   - big-gift.mp3
+   - multi-gift.mp3
+   - follow.mp3
+   - share.mp3
+6. Restart the app (npm start).
+7. Use the Settings page to double-check or update file paths.
+
+## 🔹 Current Features
+- Plays sounds & TTS for TikTok events (likes, gifts, follows, shares, chat).
+- Test controls for simulating events (accordion opens by default).
+- Switch between male (David) & female (Zira) voice.
+- Toggle mute/unmute.
+- Settings page:
+  - Change sound file paths.
+  - Instructions for where to put sound files.
+  - Notes about keeping files short.
+- About page updated with developer info + PayPal donation CTA.
 
 ## 🔹 Quick Debug Checklist
-- If UI loads but no TikTok events → check username in main.js.
+- If UI loads but no TikTok events → check username input.
 - If no sounds play → confirm sounds/ folder exists at root.
 - If no speech → check Windows PowerShell TTS is available.
-- If Electron shows blank → make sure you started with npm start (not just npm run electron).
-
----
+- If Electron shows blank → make sure you started with npm start.
 
 ## 🔹 Git Commands (Project Workflow)
-
-### Initial setup
+Initial setup
 git init
 git add .
 git commit -m "Initial commit - TikTok bot"
@@ -77,68 +88,62 @@ git branch -M main
 git remote add origin <your-repo-url>
 git push -u origin main
 
-### Everyday workflow
+Everyday workflow
 git status
 git add .
 git commit -m "Describe your changes here"
 git push
 git pull
 
-### Branching workflow
+Branching workflow
 git checkout -b feature/sound-queue
 git checkout main
 git merge feature/sound-queue
 git branch -d feature/sound-queue
 
-### Reset / rollback if needed
+Reset / rollback if needed
 git reset --hard
 git reset --soft HEAD~1
 git reset --hard HEAD~1
 
----
-
-### 🔹 Troubleshooting Git
-
-#### Undo a specific file before commit
+Troubleshooting Git
+Undo a specific file before commit
 git checkout -- filename
 
-#### Discard all local changes (dangerous)
+Discard all local changes (dangerous)
 git reset --hard
 
-#### Merge conflicts
-- Git will mark conflict areas in files with >>>>>> and <<<<<<
+Merge conflicts
+- Git will mark conflict areas in files with >>>>>>> and <<<<<<<
 - Manually edit files to keep what you want
 - Then run:
   git add .
   git commit -m "Resolved merge conflict"
 
-#### Abort a merge if too messy
+Abort a merge if too messy
 git merge --abort
 
-#### Detached HEAD fix
-- If you checked out a commit directly:
-  git checkout main
-- If you want to keep changes:
-  git checkout -b new-branch
+Detached HEAD fix
+git checkout main
+If you want to keep changes:
+git checkout -b new-branch
 
-#### See commit history
+See commit history
 git log --oneline --graph --all --decorate
 
-#### Revert a commit safely (creates a new commit)
+Revert a commit safely (creates a new commit)
 git revert <commit-id>
 
-#### Stash work (save without committing)
+Stash work (save without committing)
 git stash
 git pull
 git stash pop
 
-#### Delete local branch
+Delete local branch
 git branch -d branch-name
 
-#### Delete remote branch
+Delete remote branch
 git push origin --delete branch-name
-
----
 
 ## 🔹 Packaging into a Windows .exe
 1. Install electron-builder:
@@ -165,11 +170,8 @@ git push origin --delete branch-name
        "icon": "icon.ico"
      }
    }
-4. Run:
-   npm run dist
+4. Run: npm run dist
 5. .exe appears in release/.
-
----
 
 ## 🔹 Packaging into a Mac .app (DMG)
 1. Update package.json build config:
@@ -189,13 +191,9 @@ git push origin --delete branch-name
        "icon": "icon.icns"
      }
    }
-2. Run:
-   npm run dist
+2. Run: npm run dist
 3. .dmg appears in release/.
-
 ⚠️ Must build on Mac for Mac output (cannot cross-compile from Windows).
-
----
 
 ## 🔹 npm Commands (General Reference)
 npm install
@@ -204,12 +202,16 @@ npm install --save-dev package-name
 npm uninstall package-name
 npm update
 
----
-
 # TikTok Bot Notes
+## Recent Updates
+- ✅ Sounds must be placed in /sounds folder at project root.
+- ✅ Settings page updated with instructions + sound file editing.
+- ✅ Accordion (Test Controls) now opens by default.
+- ✅ Font updated → Roboto on PC, SF Pro on Mac.
+- ✅ About page updated → Includes developer info + PayPal donation CTA.
 
 ## Future Improvements
-- Prevent overlapping sounds (queue sounds so they play sequentially)
-- Toggle between male and female TTS voice
-- Add UI indicators for event type (like/follow/gift)
-- Option to change TikTok username from the app UI
+- Prevent overlapping sounds (queue sounds so they play sequentially).
+- Add option to toggle TikTok username inside UI.
+- UI indicators for event type (icons, colors).
+- Cross-platform packaging (Windows & Mac releases).
