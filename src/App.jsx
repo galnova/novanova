@@ -39,7 +39,7 @@ function Drawer({ isOpen, onClose }) {
   );
 }
 
-function Home() {
+function Home({ soundConfig }) {
   const [events, setEvents] = useState([]);
   const [connected, setConnected] = useState(false);
   const [voice, setVoice] = useState("Zira");
@@ -47,7 +47,7 @@ function Home() {
   const [username, setUsername] = useState("");
   const [error, setError] = useState(null);
   const [likeCount, setLikeCount] = useState(0);
-  const [showTests, setShowTests] = useState(false); // ✅ added state
+  const [showTests, setShowTests] = useState(true);
 
   useEffect(() => {
     window.electronAPI?.onTiktokEvent((data) => {
@@ -254,7 +254,7 @@ function Home() {
               addTestEvent(
                 "small-gift",
                 "User456 sent a Rose 🌹",
-                "sounds/small-gift.mp3"
+                soundConfig.smallGift
               )
             }
           >
@@ -265,7 +265,7 @@ function Home() {
               addTestEvent(
                 "big-gift",
                 "User789 sent a BIG gift 🎁",
-                "sounds/big-gift.mp3"
+                soundConfig.bigGift
               )
             }
           >
@@ -276,7 +276,7 @@ function Home() {
               addTestEvent(
                 "multi-gift",
                 "User999 sent a COMBO gift 🎉",
-                "sounds/multi-gift.mp3"
+                soundConfig.multiGift
               )
             }
           >
@@ -290,7 +290,7 @@ function Home() {
               addTestEvent(
                 "follow",
                 "User654 followed! ✅",
-                "sounds/follow.mp3"
+                soundConfig.follow
               )
             }
           >
@@ -301,7 +301,7 @@ function Home() {
               addTestEvent(
                 "share",
                 "User111 shared! 🔄",
-                "sounds/share.mp3"
+                soundConfig.share
               )
             }
           >
@@ -342,32 +342,107 @@ function About() {
         <i className="fas fa-arrow-left"></i> Back
       </button>
       <h1>About</h1>
-      <p>This is a TikTok live bot built with Electron + React.</p>
+      <p>
+        Hi, I’m <strong>Keith Jeter</strong> — a web/app developer, artist, and
+        designer. I built this TikTok Live Bot as a free tool for creators like
+        you.
+      </p>
+      <p>
+        You’re welcome to use it for free. If you’d like to support my work,
+        donations are very appreciated:
+      </p>
+      <p>
+<a
+  href="https://www.paypal.com/paypalme/greyvoth"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="donate-btn"
+>
+  <i className="fas fa-heart"></i> Donate via PayPal
+</a>
+
+      </p>
     </div>
   );
 }
 
-function Settings() {
+function Settings({ soundConfig, setSoundConfig }) {
   const navigate = useNavigate();
+
+  const handleInputChange = (key, value) => {
+    setSoundConfig((prev) => ({ ...prev, [key]: value }));
+  };
+
   return (
     <div className="sub-page">
       <button onClick={() => navigate(-1)}>
         <i className="fas fa-arrow-left"></i> Back
       </button>
       <h1>Settings</h1>
-      <p>Settings page for customizing voices, sounds, etc.</p>
+      <p className="settings-tip">
+        Place your custom sound files inside the <code>sounds/</code> folder at
+        the root of this app. Keep them at or under <strong>5 seconds</strong>{" "}
+        for best results. For fun sound downloads, check{" "}
+        <a
+          href="https://www.myinstants.com/en/index/us/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          MyInstants.com
+        </a>
+        .
+      </p>
+
+      <div className="settings-section">
+        {Object.entries(soundConfig).map(([key, value]) => (
+          <div key={key} className="settings-item">
+            <strong>{key}</strong>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => handleInputChange(key, e.target.value)}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 export default function RootApp() {
+  const [soundConfig, setSoundConfig] = useState(() => {
+    const saved = localStorage.getItem("soundConfig");
+    return saved
+      ? JSON.parse(saved)
+      : {
+          smallGift: "sounds/small-gift.mp3",
+          bigGift: "sounds/big-gift.mp3",
+          multiGift: "sounds/multi-gift.mp3",
+          follow: "sounds/follow.mp3",
+          share: "sounds/share.mp3",
+        };
+  });
+
+  // Save to localStorage whenever config changes
+  useEffect(() => {
+    localStorage.setItem("soundConfig", JSON.stringify(soundConfig));
+  }, [soundConfig]);
+
   return (
     <Router>
       <main>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Home soundConfig={soundConfig} />} />
           <Route path="/about" element={<About />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route
+            path="/settings"
+            element={
+              <Settings
+                soundConfig={soundConfig}
+                setSoundConfig={setSoundConfig}
+              />
+            }
+          />
         </Routes>
       </main>
     </Router>

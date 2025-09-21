@@ -1,5 +1,7 @@
-.App {
-  font-family: Arial, sans-serif;
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap");
+body, .App, .sub-page {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Roboto",
+    "Helvetica Neue", Arial, sans-serif;
   padding: 20px;
   background: #0d0d0d;
   color: #fff;
@@ -281,7 +283,6 @@ h1 {
   background: #111;
   color: #fff;
   outline: none;
-  /* box-shadow: 0 0 6px rgba(0, 242, 234, 0.3); */
   transition: border 0.2s, box-shadow 0.2s;
 }
 
@@ -405,19 +406,97 @@ h1 {
   background: #444;
 }
 
-/*-- Media Queries --*/
-
-@media (max-width: 480px) { 
-  .username-group {
-  /* overflow: hidden; */
+/* --- Settings Page --- */
+.settings-section {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  background: #1e1e1e;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  gap: 12px;
+}
+
+.settings-item strong {
+  color: #00f2ea;
+  min-width: 120px;
+  text-transform: capitalize;
+}
+
+.settings-item input {
+  flex: 1;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.settings-item input:focus {
+  border: 1px solid #00f2ea;
+  box-shadow: 0 0 6px rgba(0, 242, 234, 0.5);
+}
+
+/* --- Settings tip text --- */
+.settings-tip {
+  background: #1e293b;
+  border-left: 4px solid #00f2ea;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  color: #cbd5e1;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.settings-tip a {
+  color: #00f2ea;
+  text-decoration: underline;
+}
+
+.settings-tip a:hover {
+  color: #00c8be;
+}
+
+.donate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #00f2ea;
+  color: #111;
+  font-weight: bold;
+  text-decoration: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.donate-btn i {
+  color: red;
+}
+
+.donate-btn:hover {
+  background: #00c8be;
+  /* transform: scale(1.05); */
+}
+
+/*-- Media Queries --*/
+@media (max-width: 500px) { 
   .username-input input {
     width: calc(100% - 22px);
     border-radius: 6px;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    padding-inline: 0;
-    padding-block: 0;
     padding: 10px;
   }
 
@@ -427,5 +506,19 @@ h1 {
     border-top-right-radius: 0;
     width: 100%;
     border: solid 1px #facc15;
+  }
+
+  .settings-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .settings-item strong {
+    min-width: unset;
+  }
+
+  .settings-item input {
+    width: 100%;
   }
 }

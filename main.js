@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, dialog } from "electron"; // ⬅️ added dialog
 import path from "path";
 import { fileURLToPath } from "url";
 import { WebcastPushConnection } from "tiktok-live-connector";
@@ -197,6 +197,16 @@ ipcMain.on("connect-tiktok", (_event, username) => {
     console.log("🔗 Connecting to TikTok username:", username);
     connectTiktok(win, username);
   }
+});
+
+// --- File Picker for custom sounds ---
+ipcMain.handle("dialog:openFile", async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    properties: ["openFile"],
+    filters: [{ name: "Audio Files", extensions: ["mp3", "wav"] }],
+  });
+  if (canceled) return null;
+  return filePaths[0]; // return selected file path
 });
 
 // --- App lifecycle ---

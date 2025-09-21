@@ -21,4 +21,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   // --- NEW: Connect to TikTok with username
   connectTiktok: (username) => ipcRenderer.send("connect-tiktok", username),
+
+  // --- NEW: File picker for sounds
+  pickFile: () => ipcRenderer.invoke("dialog:openFile"),
 });
