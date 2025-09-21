@@ -47,6 +47,7 @@ function Home() {
   const [username, setUsername] = useState("");
   const [error, setError] = useState(null);
   const [likeCount, setLikeCount] = useState(0);
+  const [showTests, setShowTests] = useState(false); // ✅ added state
 
   useEffect(() => {
     window.electronAPI?.onTiktokEvent((data) => {
@@ -147,7 +148,11 @@ function Home() {
   return (
     <div className="App">
       <div className="status-header">
-        <div className={`status-bar ${connected ? "connected" : "disconnected"}`}>
+        <div
+          className={`status-bar ${
+            connected ? "connected" : "disconnected"
+          }`}
+        >
           {connected ? (
             <>
               <i className="fas fa-circle" style={{ color: "#22c55e" }}></i>{" "}
@@ -219,75 +224,91 @@ function Home() {
         </button>
       </div>
 
-      <div className="test-controls">
+      {/* Collapsible Test Controls */}
+      <h2>
         <button
-          onClick={() =>
-            addTestEvent("chat", "User123 says Hello World!", null, true)
-          }
+          className="collapsible"
+          onClick={() => setShowTests((prev) => !prev)}
         >
-          <i className="fas fa-comment"></i> Test Chat
+          <i className="fas fa-vial"></i> Test Controls
+          <i
+            className={`fas ${
+              showTests ? "fa-chevron-up" : "fa-chevron-down"
+            }`}
+            style={{ marginLeft: "8px" }}
+          ></i>
         </button>
-        <button
-          onClick={() =>
-            addTestEvent(
-              "small-gift",
-              "User456 sent a Rose 🌹",
-              "sounds/small-gift.mp3"
-            )
-          }
-        >
-          <i className="fas fa-gift"></i> Test Small Gift
-        </button>
-        <button
-          onClick={() =>
-            addTestEvent(
-              "big-gift",
-              "User789 sent a BIG gift 🎁",
-              "sounds/big-gift.mp3"
-            )
-          }
-        >
-          <i className="fas fa-gifts"></i> Test Big Gift
-        </button>
-        <button
-          onClick={() =>
-            addTestEvent(
-              "multi-gift",
-              "User999 sent a COMBO gift 🎉",
-              "sounds/multi-gift.mp3"
-            )
-          }
-        >
-          <i className="fas fa-gifts"></i> Test Multi Gift
-        </button>
-        <button
-          onClick={() => addTestEvent("like", "User321 liked ❤️")}
-        >
-          <i className="fas fa-thumbs-up"></i> Test Like
-        </button>
-        <button
-          onClick={() =>
-            addTestEvent(
-              "follow",
-              "User654 followed! ✅",
-              "sounds/follow.mp3"
-            )
-          }
-        >
-          <i className="fas fa-user-plus"></i> Test Follow
-        </button>
-        <button
-          onClick={() =>
-            addTestEvent(
-              "share",
-              "User111 shared! 🔄",
-              "sounds/share.mp3"
-            )
-          }
-        >
-          <i className="fas fa-share"></i> Test Share
-        </button>
-      </div>
+      </h2>
+
+      {showTests && (
+        <div className="test-controls">
+          <button
+            onClick={() =>
+              addTestEvent("chat", "User123 says Hello World!", null, true)
+            }
+          >
+            <i className="fas fa-comment"></i> Test Chat
+          </button>
+          <button
+            onClick={() =>
+              addTestEvent(
+                "small-gift",
+                "User456 sent a Rose 🌹",
+                "sounds/small-gift.mp3"
+              )
+            }
+          >
+            <i className="fas fa-gift"></i> Test Small Gift
+          </button>
+          <button
+            onClick={() =>
+              addTestEvent(
+                "big-gift",
+                "User789 sent a BIG gift 🎁",
+                "sounds/big-gift.mp3"
+              )
+            }
+          >
+            <i className="fas fa-gifts"></i> Test Big Gift
+          </button>
+          <button
+            onClick={() =>
+              addTestEvent(
+                "multi-gift",
+                "User999 sent a COMBO gift 🎉",
+                "sounds/multi-gift.mp3"
+              )
+            }
+          >
+            <i className="fas fa-gifts"></i> Test Multi Gift
+          </button>
+          <button onClick={() => addTestEvent("like", "User321 liked ❤️")}>
+            <i className="fas fa-thumbs-up"></i> Test Like
+          </button>
+          <button
+            onClick={() =>
+              addTestEvent(
+                "follow",
+                "User654 followed! ✅",
+                "sounds/follow.mp3"
+              )
+            }
+          >
+            <i className="fas fa-user-plus"></i> Test Follow
+          </button>
+          <button
+            onClick={() =>
+              addTestEvent(
+                "share",
+                "User111 shared! 🔄",
+                "sounds/share.mp3"
+              )
+            }
+          >
+            <i className="fas fa-share"></i> Test Share
+          </button>
+        </div>
+      )}
 
       <div className="events">
         {events.map((e, i) => (
