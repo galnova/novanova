@@ -1,85 +1,133 @@
-# TikTok Bot – Launch & Usage Notes
+TikTok Bot – Launch & Usage Notes
+🔹 Development Commands
 
-## 🔹 Development Commands
 Start the full app (recommended)
 Runs Vite (frontend) + Electron (backend) together.
 npm start
-- Opens the Electron window with your React UI.
-- Connects to TikTok (main.js runs).
-- Plays sounds & TTS when events happen.
+
+Opens the Electron window with your React UI.
+
+Connects to TikTok (main.js runs).
+
+Plays sounds & TTS when events happen.
 
 Run only the frontend (UI only, no TikTok)
 Useful if you just want to test the React interface.
 npm run dev
-- Starts Vite dev server at http://localhost:5173
-- Opens in your browser.
-- Does not connect to TikTok or play sounds (Electron isn’t running).
+
+Starts Vite dev server at http://localhost:5173
+
+Opens in your browser.
+
+Does not connect to TikTok or play sounds (Electron isn’t running).
 
 Run only Electron
 Launches the Electron shell without waiting for Vite.
 npm run electron
-- If Vite isn’t already running → you’ll see a blank Electron screen.
-- If Vite is running at localhost:5173 → it will load your app UI.
-- Mainly used for debugging.
 
-## 🔹 Typical Workflow
-1. Edit code in React (App.jsx) or backend (main.js).
-2. Run: npm start
-3. Wait until the Electron window shows.
-4. Start a TikTok livestream from the username entered in the app UI.
-5. Confirm app status:
-   - 🟢 Connected → bot is live.
-   - 🔴 Disconnected → not live / username wrong.
-6. Test buttons in the UI to confirm sound & TTS.
+If Vite isn’t already running → you’ll see a blank Electron screen.
 
-## 🔹 Where things run
-- Electron / main.js → Connects to TikTok, plays sounds, runs TTS.
-- Vite / React frontend → Displays UI (status bar, logs, test buttons).
-- Sounds → Must be in sounds/ folder at project root, e.g.:
-  project-root/
-    main.js
-    preload.js
-    sounds/
-      small-gift.mp3
-      big-gift.mp3
-      multi-gift.mp3
-      follow.mp3
-      share.mp3
-- Keep sounds 5 seconds or under for best results.
-- Recommend downloading short sound clips from 👉 https://www.myinstants.com/en/index/us/
+If Vite is running at localhost:5173 → it will load your app UI.
 
-## 🔹 How to Add Your Own Sounds
-1. Go to 👉 https://www.myinstants.com/en/index/us/
-2. Find a sound effect you like (keep it short).
-3. Click Download MP3.
-4. Save it inside your project’s /sounds folder.
-5. Rename it to match one of the events:
-   - small-gift.mp3
-   - big-gift.mp3
-   - multi-gift.mp3
-   - follow.mp3
-   - share.mp3
-6. Restart the app (npm start).
-7. Use the Settings page to double-check or update file paths.
+Mainly used for debugging.
 
-## 🔹 Current Features
-- Plays sounds & TTS for TikTok events (likes, gifts, follows, shares, chat).
-- Test controls for simulating events (accordion opens by default).
-- Switch between male (David) & female (Zira) voice.
-- Toggle mute/unmute.
-- Settings page:
-  - Change sound file paths.
-  - Instructions for where to put sound files.
-  - Notes about keeping files short.
-- About page updated with developer info + PayPal donation CTA.
+🔹 Typical Workflow
 
-## 🔹 Quick Debug Checklist
-- If UI loads but no TikTok events → check username input.
-- If no sounds play → confirm sounds/ folder exists at root.
-- If no speech → check Windows PowerShell TTS is available.
-- If Electron shows blank → make sure you started with npm start.
+Edit code in React (App.jsx) or backend (main.js).
 
-## 🔹 Git Commands (Project Workflow)
+Run: npm start
+
+Wait until the Electron window shows.
+
+Start a TikTok livestream from the username entered in the app UI.
+
+Confirm app status:
+
+🟢 Connected → bot is live.
+
+🔴 Disconnected → not live / username wrong.
+
+Test buttons in the UI to confirm sound & TTS.
+
+🔹 Where things run
+
+Electron / main.js → Connects to TikTok, plays sounds, runs TTS.
+
+Vite / React frontend → Displays UI (status bar, logs, test buttons).
+
+Sounds → Must be in sounds/ folder at project root, e.g.:
+project-root/
+main.js
+preload.js
+sounds/
+small-gift.mp3
+big-gift.mp3
+multi-gift.mp3
+follow.mp3
+share.mp3
+
+Keep sounds 5 seconds or under for best results.
+
+Recommend downloading short sound clips from 👉 https://www.myinstants.com/en/index/us/
+
+🔹 How to Add Your Own Sounds
+
+Go to 👉 https://www.myinstants.com/en/index/us/
+
+Find a sound effect you like (keep it short).
+
+Click Download MP3.
+
+Save it inside your project’s /sounds folder.
+
+Rename it to match one of the events:
+
+small-gift.mp3
+
+big-gift.mp3
+
+multi-gift.mp3
+
+follow.mp3
+
+share.mp3
+
+Restart the app (npm start).
+
+Use the Settings page to double-check or update file paths.
+
+🔹 Current Features
+
+Plays sounds & TTS for TikTok events (likes, gifts, follows, shares, chat).
+
+Test controls for simulating events (accordion opens by default).
+
+Switch between male (David) & female (Zira) voice.
+
+Toggle mute/unmute.
+
+Settings page:
+
+Change sound file paths.
+
+Instructions for where to put sound files.
+
+Notes about keeping files short.
+
+About page updated with developer info + PayPal donation CTA.
+
+🔹 Quick Debug Checklist
+
+If UI loads but no TikTok events → check username input.
+
+If no sounds play → confirm sounds/ folder exists at root.
+
+If no speech → check Windows PowerShell TTS is available.
+
+If Electron shows blank → make sure you started with npm start.
+
+🔹 Git Commands (Project Workflow)
+
 Initial setup
 git init
 git add .
@@ -114,11 +162,14 @@ Discard all local changes (dangerous)
 git reset --hard
 
 Merge conflicts
-- Git will mark conflict areas in files with >>>>>>> and <<<<<<<
-- Manually edit files to keep what you want
-- Then run:
-  git add .
-  git commit -m "Resolved merge conflict"
+
+Git will mark conflict areas in files with >>>>>>> and <<<<<<<
+
+Manually edit files to keep what you want
+
+Then run:
+git add .
+git commit -m "Resolved merge conflict"
 
 Abort a merge if too messy
 git merge --abort
@@ -145,73 +196,126 @@ git branch -d branch-name
 Delete remote branch
 git push origin --delete branch-name
 
-## 🔹 Packaging into a Windows .exe
-1. Install electron-builder:
-   npm install --save-dev electron-builder
-2. Add build script to package.json:
-   "scripts": {
-     "build": "vite build",
-     "dist": "electron-builder"
-   }
-3. Add config:
-   "build": {
-     "appId": "com.tiktok.bot",
-     "productName": "TikTok Bot",
-     "directories": { "output": "release" },
-     "files": [
-       "dist/**/*",
-       "main.js",
-       "preload.js",
-       "sounds/**/*",
-       "package.json"
-     ],
-     "win": {
-       "target": "nsis",
-       "icon": "icon.ico"
-     }
-   }
-4. Run: npm run dist
-5. .exe appears in release/.
+🔹 Packaging into a Windows .exe
 
-## 🔹 Packaging into a Mac .app (DMG)
-1. Update package.json build config:
-   "build": {
-     "appId": "com.tiktok.bot",
-     "productName": "TikTok Bot",
-     "directories": { "output": "release" },
-     "files": [
-       "dist/**/*",
-       "main.js",
-       "preload.js",
-       "sounds/**/*",
-       "package.json"
-     ],
-     "mac": {
-       "target": "dmg",
-       "icon": "icon.icns"
-     }
-   }
-2. Run: npm run dist
-3. .dmg appears in release/.
+Install electron-builder:
+npm install --save-dev electron-builder
+
+Add build script to package.json:
+"scripts": {
+"build": "vite build",
+"dist": "electron-builder"
+}
+
+Add config:
+"build": {
+"appId": "com.tiktok.bot",
+"productName": "TikTok Bot",
+"directories": { "output": "release" },
+"files": [
+"dist//*",
+"main.js",
+"preload.js",
+"sounds//*",
+"package.json"
+],
+"win": {
+"target": "nsis",
+"icon": "icon.ico"
+}
+}
+
+Run: npm run dist
+
+.exe appears in release/.
+
+🔹 Packaging into a Mac .app (DMG)
+
+Update package.json build config:
+"build": {
+"appId": "com.tiktok.bot",
+"productName": "TikTok Bot",
+"directories": { "output": "release" },
+"files": [
+"dist//*",
+"main.js",
+"preload.js",
+"sounds//*",
+"package.json"
+],
+"mac": {
+"target": "dmg",
+"icon": "icon.icns"
+}
+}
+
+Run: npm run dist
+
+.dmg appears in release/.
 ⚠️ Must build on Mac for Mac output (cannot cross-compile from Windows).
 
-## 🔹 npm Commands (General Reference)
+🔹 npm Commands (General Reference)
+
 npm install
 npm install package-name
 npm install --save-dev package-name
 npm uninstall package-name
 npm update
 
-# TikTok Bot Notes
-## Recent Updates
-- ✅ Sounds must be placed in /sounds folder at project root.
-- ✅ Settings page updated with instructions + sound file editing.
-- ✅ Accordion (Test Controls) now opens by default.
-- ✅ Font updated → Roboto on PC, SF Pro on Mac.
-- ✅ About page updated → Includes developer info + PayPal donation CTA.
+TikTok Bot Notes
+Recent Updates
 
-## Future Improvements
-- Prevent overlapping sounds (queue sounds so they play sequentially).
-- Add option to toggle TikTok username inside UI.
-- UI indicators for event type (icons, colors).
-- Cross-platform packaging (Windows & Mac releases).
+✅ Sounds must be placed in /sounds folder at project root.
+
+✅ Settings page updated with instructions + sound file editing.
+
+✅ Accordion (Test Controls) now opens by default.
+
+✅ Font updated → Roboto on PC, SF Pro on Mac.
+
+✅ About page updated → Includes developer info + PayPal donation CTA.
+
+Future Improvements
+
+Prevent overlapping sounds (queue sounds so they play sequentially).
+
+Add option to toggle TikTok username inside UI.
+
+UI indicators for event type (icons, colors).
+
+Cross-platform packaging (Windows & Mac releases).
+
+🔹 Troubleshooting (App Issues)
+
+If npm run dev or npm start fails with “concurrently not recognized” → install it: npm install --save-dev concurrently wait-on
+
+If you see “Failed to resolve import 'react-router-dom'” → install it: npm install react-router-dom
+
+If you see “Failed to resolve import '@fortawesome/fontawesome-free/css/all.min.css'” → install it: npm install @fortawesome/fontawesome-free
+
+If sounds don’t play → confirm the /sounds folder exists and filenames match what the app expects.
+
+If TTS doesn’t work → make sure Windows PowerShell TTS is enabled (System.Speech).
+
+If Electron shows a blank screen → make sure you ran npm start (not just npm run electron).
+
+If the dist folder gets locked and refuses to delete → reboot into Safe Mode and remove it from there.
+
+🔹 Clean Reinstall Checklist
+
+Move out of any locked folder (cd ~ in PowerShell).
+
+If old project is stuck, just ignore it and clone fresh. Example:
+cd C:\Users\kjete\OneDrive\Desktop
+git clone https://github.com/YOUR-USERNAME/YOUR-REPO.git
+ tiknova_new
+cd tiknova_new
+
+Install all dependencies:
+npm install
+npm install react-router-dom @fortawesome/fontawesome-free concurrently wait-on
+
+Run the app:
+npm run dev (UI only) or npm start (full app).
+
+If it works, you can later clean up the old folder in Safe Mode.

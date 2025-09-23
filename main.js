@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from "electron"; // ⬅️ added dialog
+import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import { WebcastPushConnection } from "tiktok-live-connector";
@@ -20,6 +20,7 @@ let isSpeaking = false;
 const audioPlayer = player();
 let isMuted = false; // 🔇 mute flag
 let tiktok = null;   // store current connection
+let totalLikes = 0;  // ✅ track likes properly
 
 function speak(text) {
   return new Promise((resolve) => {
@@ -83,11 +84,15 @@ function connectTiktok(win, username) {
   // Disconnect existing
   if (tiktok) {
     try {
+      tiktok.removeAllListeners(); // ✅ clear old listeners
       tiktok.disconnect();
     } catch (err) {
       console.error("Error disconnecting previous connection:", err);
     }
     tiktok = null;
+    speechQueue = [];   // ✅ clear speech queue
+    isSpeaking = false;
+    totalLikes = 0;     // ✅ reset like counter
   }
 
   tiktok = new WebcastPushConnection(username, {
@@ -116,9 +121,10 @@ function connectTiktok(win, username) {
   });
 
   tiktok.on("like", (data) => {
-    const msg = `${data.uniqueId} liked (${data.likeCount} likes)`;
-    win.webContents.send("tiktok-event", { msg, type: "like" });
-    enqueueSpeech(`SOUND::sounds/like.mp3`);
+    totalLikes = data.totalLikeCount || totalLikes; // ✅ use total count
+    const msg = `${data.uniqueId} liked ❤️ — Total likes: ${totalLikes}`;
+    win.webContents.send("tiktok-event", { msg, type: "like", likes: totalLikes });
+    // ✅ no sound for likes anymore
   });
 
   tiktok.on("follow", (data) => {

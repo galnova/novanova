@@ -12,13 +12,11 @@ import "./App.css";
 function Drawer({ isOpen, onClose }) {
   return (
     <>
-      {/* Overlay */}
       <div
         className={`overlay ${isOpen ? "show" : ""}`}
         onClick={onClose}
       ></div>
 
-      {/* Drawer */}
       <div className={`drawer ${isOpen ? "open" : ""}`}>
         <button className="drawer-close" onClick={onClose}>
           <i className="fas fa-times"></i>
@@ -58,17 +56,21 @@ function Home({ soundConfig }) {
       }
 
       if (data.type === "like") {
-        setLikeCount((prev) => {
-          const newCount = prev + 1;
-          checkMilestone(newCount);
-          return newCount;
-        });
+        // ✅ use accurate total count from main.js
+        setLikeCount(data.likes || 0);
+        checkMilestone(data.likes || 0);
       }
     });
 
     window.electronAPI?.onTiktokStatus((data) => {
       setConnected(data.connected);
-      if (data.connected) setError(null);
+      if (!data.connected) {
+        // ✅ reset when disconnected
+        setEvents([]);
+        setLikeCount(0);
+      } else {
+        setError(null);
+      }
     });
   }, []);
 
@@ -352,15 +354,14 @@ function About() {
         donations are very appreciated:
       </p>
       <p>
-<a
-  href="https://www.paypal.com/paypalme/greyvoth"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="donate-btn"
->
-  <i className="fas fa-heart"></i> Donate via PayPal
-</a>
-
+        <a
+          href="https://www.paypal.com/paypalme/greyvoth"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="donate-btn"
+        >
+          <i className="fas fa-heart"></i> Donate via PayPal
+        </a>
       </p>
     </div>
   );
@@ -423,7 +424,6 @@ export default function RootApp() {
         };
   });
 
-  // Save to localStorage whenever config changes
   useEffect(() => {
     localStorage.setItem("soundConfig", JSON.stringify(soundConfig));
   }, [soundConfig]);
