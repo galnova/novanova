@@ -44,38 +44,58 @@ function Home({ soundConfig }) {
   const [muted, setMuted] = useState(false);
   const [username, setUsername] = useState("");
   const [error, setError] = useState(null);
+
   const [likeCount, setLikeCount] = useState(0);
+  const [followCount, setFollowCount] = useState(0);
+  const [shareCount, setShareCount] = useState(0);
+  const [chatCount, setChatCount] = useState(0);
+
   const [showTests, setShowTests] = useState(true);
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
-    window.electronAPI?.onTiktokEvent((data) => {
+    const eventHandler = (data) => {
       setEvents((prev) => [data, ...prev].slice(0, 50));
 
       if (data.type === "error") {
-        setError(data.msg);
+        setError(data.msg || data.message);
       }
-
       if (data.type === "like") {
-        // ✅ use accurate total count from main.js
         setLikeCount(data.likes || 0);
         checkMilestone(data.likes || 0);
       }
-    });
+      if (data.type === "follow") {
+        setFollowCount((prev) => prev + 1);
+      }
+      if (data.type === "share") {
+        setShareCount((prev) => prev + 1);
+      }
+      if (data.type === "chat") {
+        setChatCount((prev) => prev + 1);
+        window.electronAPI?.speak(`${data.user} says ${data.message}`);
+      }
+    };
 
-    window.electronAPI?.onTiktokStatus((data) => {
+    const statusHandler = (data) => {
       setConnected(data.connected);
       if (!data.connected) {
-        // ✅ reset when disconnected
-        setEvents([]);
-        setLikeCount(0);
+        setShowSummary(true);
       } else {
         setError(null);
       }
-    });
+    };
+
+    const listener1 = window.electronAPI?.onTiktokEvent(eventHandler);
+    const listener2 = window.electronAPI?.onTiktokStatus(statusHandler);
+
+    return () => {
+      window.electronAPI?.removeTiktokEvent?.(listener1);
+      window.electronAPI?.removeTiktokStatus?.(listener2);
+    };
   }, []);
 
   const addTestEvent = (type, msg, sound = null, speak = false) => {
-    const event = { type, msg };
+    const event = { type, message: msg };
     setEvents((prev) => [event, ...prev].slice(0, 50));
     if (sound) window.electronAPI?.playSound(sound);
     if (speak) window.electronAPI?.speak(msg);
@@ -87,6 +107,9 @@ function Home({ soundConfig }) {
         return newCount;
       });
     }
+    if (type === "follow") setFollowCount((prev) => prev + 1);
+    if (type === "share") setShareCount((prev) => prev + 1);
+    if (type === "chat") setChatCount((prev) => prev + 1);
   };
 
   const celebratoryWords = [
@@ -110,7 +133,6 @@ function Home({ soundConfig }) {
 
   const checkMilestone = (count) => {
     let isMilestone = false;
-
     if (count <= 500 && count % 100 === 0) {
       isMilestone = true;
     } else if (count > 500 && count <= 10000 && count % 500 === 0) {
@@ -142,18 +164,26 @@ function Home({ soundConfig }) {
       setError("❌ Failed: Please enter a username first!");
       return;
     }
-
     window.electronAPI?.connectTiktok(username.trim());
     setError(null);
+    setShowSummary(false);
+    setLikeCount(0);
+    setFollowCount(0);
+    setShareCount(0);
+    setChatCount(0);
+  };
+
+  const handleDisconnect = () => {
+    window.electronAPI?.disconnectTiktok?.();
+    setConnected(false);
+    setShowSummary(true);
   };
 
   return (
     <div className="App">
       <div className="status-header">
         <div
-          className={`status-bar ${
-            connected ? "connected" : "disconnected"
-          }`}
+          className={`status-bar ${connected ? "connected" : "disconnected"}`}
         >
           {connected ? (
             <>
@@ -199,6 +229,11 @@ function Home({ soundConfig }) {
                 </>
               )}
             </button>
+            {connected && (
+              <button onClick={handleDisconnect} className="disconnect-btn">
+                <i className="fas fa-plug"></i> Disconnect
+              </button>
+            )}
           </div>
           {error && <div className="error-banner attached">{error}</div>}
         </div>
@@ -234,9 +269,7 @@ function Home({ soundConfig }) {
         >
           <i className="fas fa-vial"></i> Test Controls
           <i
-            className={`fas ${
-              showTests ? "fa-chevron-up" : "fa-chevron-down"
-            }`}
+            className={`fas ${showTests ? "fa-chevron-up" : "fa-chevron-down"}`}
             style={{ marginLeft: "8px" }}
           ></i>
         </button>
@@ -254,7 +287,7 @@ function Home({ soundConfig }) {
           <button
             onClick={() =>
               addTestEvent(
-                "small-gift",
+                "gift",
                 "User456 sent a Rose 🌹",
                 soundConfig.smallGift
               )
@@ -265,7 +298,7 @@ function Home({ soundConfig }) {
           <button
             onClick={() =>
               addTestEvent(
-                "big-gift",
+                "gift",
                 "User789 sent a BIG gift 🎁",
                 soundConfig.bigGift
               )
@@ -276,7 +309,7 @@ function Home({ soundConfig }) {
           <button
             onClick={() =>
               addTestEvent(
-                "multi-gift",
+                "gift",
                 "User999 sent a COMBO gift 🎉",
                 soundConfig.multiGift
               )
@@ -289,22 +322,14 @@ function Home({ soundConfig }) {
           </button>
           <button
             onClick={() =>
-              addTestEvent(
-                "follow",
-                "User654 followed! ✅",
-                soundConfig.follow
-              )
+              addTestEvent("follow", "User654 followed! ✅", soundConfig.follow)
             }
           >
             <i className="fas fa-user-plus"></i> Test Follow
           </button>
           <button
             onClick={() =>
-              addTestEvent(
-                "share",
-                "User111 shared! 🔄",
-                soundConfig.share
-              )
+              addTestEvent("share", "User111 shared! 🔄", soundConfig.share)
             }
           >
             <i className="fas fa-share"></i> Test Share
@@ -315,17 +340,45 @@ function Home({ soundConfig }) {
       <div className="events">
         {events.map((e, i) => (
           <div key={i} className={`event ${e.type}`}>
-            <strong>[{e.type}]</strong> {e.msg}
+            <strong>[{e.type}]</strong> {e.message || e.msg}
           </div>
         ))}
       </div>
+
+      {/* Session Summary Modal */}
+      {showSummary && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <button
+              className="modal-close"
+              onClick={() => setShowSummary(false)}
+            >
+              <i className="fas fa-times"></i>
+            </button>
+            <h2>📊 Session Summary</h2>
+            <ul>
+              <li>
+                <i className="fas fa-heart"></i> Likes: {likeCount}
+              </li>
+              <li>
+                <i className="fas fa-user-plus"></i> Follows: {followCount}
+              </li>
+              <li>
+                <i className="fas fa-share"></i> Shares: {shareCount}
+              </li>
+              <li>
+                <i className="fas fa-comment"></i> Comments: {chatCount}
+              </li>
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function HamburgerMenu() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-
   return (
     <>
       <button className="hamburger" onClick={() => setDrawerOpen(true)}>
@@ -369,11 +422,9 @@ function About() {
 
 function Settings({ soundConfig, setSoundConfig }) {
   const navigate = useNavigate();
-
   const handleInputChange = (key, value) => {
     setSoundConfig((prev) => ({ ...prev, [key]: value }));
   };
-
   return (
     <div className="sub-page">
       <button onClick={() => navigate(-1)}>

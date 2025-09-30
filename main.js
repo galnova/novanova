@@ -69,6 +69,10 @@ function enqueueSpeech(text) {
     console.log("🔇 Muted — skipping:", text);
     return;
   }
+  // ✅ guard against runaway queues
+  if (speechQueue.length > 50) {
+    speechQueue.shift();
+  }
   speechQueue.push(text);
   processQueue();
 }
@@ -81,18 +85,18 @@ function connectTiktok(win, username) {
     return;
   }
 
-  // Disconnect existing
+  // Disconnect existing first
   if (tiktok) {
     try {
-      tiktok.removeAllListeners(); // ✅ clear old listeners
+      tiktok.removeAllListeners();
       tiktok.disconnect();
     } catch (err) {
       console.error("Error disconnecting previous connection:", err);
     }
     tiktok = null;
-    speechQueue = [];   // ✅ clear speech queue
+    speechQueue = [];
     isSpeaking = false;
-    totalLikes = 0;     // ✅ reset like counter
+    totalLikes = 0;
   }
 
   tiktok = new WebcastPushConnection(username, {
@@ -111,54 +115,91 @@ function connectTiktok(win, username) {
   tiktok.on("disconnected", () => {
     console.log("⚠️ Disconnected");
     win.webContents.send("tiktok-status", { connected: false });
+    speechQueue = [];
+    isSpeaking = false;
   });
 
   tiktok.on("chat", (data) => {
-    const name = data.nickname || data.uniqueId;
-    const msg = `${name}: ${data.comment}`;
-    win.webContents.send("tiktok-event", { msg, type: "chat" });
-    enqueueSpeech(`${name} says ${data.comment}`);
+    const user = data.nickname || data.uniqueId;
+    const message = data.comment;
+    console.log("📥 Chat event:", user, message);
+    win.webContents.send("tiktok-event", {
+      type: "chat",
+      user,
+      message,
+      meta: data,
+    });
+    enqueueSpeech(`${user} says ${message}`);
   });
 
   tiktok.on("like", (data) => {
-    totalLikes = data.totalLikeCount || totalLikes; // ✅ use total count
-    const msg = `${data.uniqueId} liked ❤️ — Total likes: ${totalLikes}`;
-    win.webContents.send("tiktok-event", { msg, type: "like", likes: totalLikes });
-    // ✅ no sound for likes anymore
+    if (data.totalLikeCount !== undefined) {
+      totalLikes = data.totalLikeCount;
+    } else {
+      totalLikes += data.likeCount || 0;
+    }
+    console.log("❤️ Like event:", data.uniqueId, "Total:", totalLikes);
+    win.webContents.send("tiktok-event", {
+      type: "like",
+      user: data.uniqueId,
+      message: `${data.uniqueId} liked`,
+      likes: totalLikes,
+      meta: data,
+    });
   });
 
   tiktok.on("follow", (data) => {
-    const msg = `${data.uniqueId} followed!`;
-    win.webContents.send("tiktok-event", { msg, type: "follow" });
+    const user = data.uniqueId;
+    console.log("👤 Follow event:", user);
+    win.webContents.send("tiktok-event", {
+      type: "follow",
+      user,
+      message: `${user} followed!`,
+      meta: data,
+    });
     enqueueSpeech(`SOUND::sounds/follow.mp3`);
   });
 
   tiktok.on("gift", (data) => {
-    let msg = `${data.uniqueId} sent ${data.giftName}`;
+    const user = data.uniqueId;
+    let message = `${user} sent ${data.giftName}`;
     let soundFile = "sounds/small-gift.mp3";
 
     if (data.repeatEnd) {
-      msg = `${data.uniqueId} sent a COMBO of ${data.giftName} x${data.repeatCount}`;
+      message = `${user} sent a COMBO of ${data.giftName} x${data.repeatCount}`;
       soundFile = "sounds/multi-gift.mp3";
     } else if (data.diamondCount >= 100) {
-      msg = `${data.uniqueId} sent a BIG gift: ${data.giftName}`;
+      message = `${user} sent a BIG gift: ${data.giftName}`;
       soundFile = "sounds/big-gift.mp3";
     }
 
-    win.webContents.send("tiktok-event", { msg, type: "gift" });
+    console.log("🎁 Gift event:", message);
+    win.webContents.send("tiktok-event", {
+      type: "gift",
+      user,
+      message,
+      meta: data,
+    });
     enqueueSpeech(`SOUND::${soundFile}`);
   });
 
   tiktok.on("share", (data) => {
-    const msg = `${data.uniqueId} shared the stream!`;
-    win.webContents.send("tiktok-event", { msg, type: "share" });
+    const user = data.uniqueId;
+    const message = `${user} shared the stream!`;
+    console.log("🔗 Share event:", message);
+    win.webContents.send("tiktok-event", {
+      type: "share",
+      user,
+      message,
+      meta: data,
+    });
     enqueueSpeech(`SOUND::sounds/share.mp3`);
   });
 
   tiktok.connect().catch((err) => {
     console.error("❌ Failed:", err);
     const msg = `❌ Failed to connect: ${err.message || err}`;
-    win.webContents.send("tiktok-event", { msg, type: "error" });
+    win.webContents.send("tiktok-event", { type: "error", message: msg });
     win.webContents.send("tiktok-status", { connected: false });
   });
 }
@@ -205,6 +246,27 @@ ipcMain.on("connect-tiktok", (_event, username) => {
   }
 });
 
+// ✅ Manual disconnect from UI
+ipcMain.on("disconnect-tiktok", (_event) => {
+  if (tiktok) {
+    try {
+      tiktok.removeAllListeners();
+      tiktok.disconnect();
+    } catch (err) {
+      console.error("Error disconnecting:", err);
+    }
+    tiktok = null;
+    speechQueue = [];
+    isSpeaking = false;
+    totalLikes = 0;
+  }
+
+  const win = BrowserWindow.getFocusedWindow();
+  if (win) {
+    win.webContents.send("tiktok-status", { connected: false });
+  }
+});
+
 // --- File Picker for custom sounds ---
 ipcMain.handle("dialog:openFile", async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog({
@@ -212,7 +274,7 @@ ipcMain.handle("dialog:openFile", async () => {
     filters: [{ name: "Audio Files", extensions: ["mp3", "wav"] }],
   });
   if (canceled) return null;
-  return filePaths[0]; // return selected file path
+  return filePaths[0];
 });
 
 // --- App lifecycle ---
