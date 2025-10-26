@@ -1,1 +1,6 @@
 node_modules
+
+dist/
+/release
+/dist/win-unpacked
+/dist/*.asar
