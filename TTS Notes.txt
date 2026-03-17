@@ -2,8 +2,9 @@ TikTok Bot – Launch & Usage Notes
 🔹 Development Commands
 
 Start the full app (recommended)
-Runs Vite (frontend) + Electron (backend) together.
+Runs signServer + Vite (frontend) + Electron together.
 npm start
+(npm run dev is identical — both work the same way)
 
 Opens the Electron window with your React UI.
 
@@ -12,8 +13,8 @@ Connects to TikTok (main.js runs).
 Plays sounds & TTS when events happen.
 
 Run only the frontend (UI only, no TikTok)
-Useful if you just want to test the React interface.
-npm run dev
+Useful if you just want to test the React interface in a browser.
+npm run vite
 
 Starts Vite dev server at http://localhost:5173
 
@@ -198,36 +199,32 @@ git push origin --delete branch-name
 
 🔹 Packaging into a Windows .exe
 
-Install electron-builder:
-npm install --save-dev electron-builder
+Before building, make sure:
+1. icon.ico exists in the project root (required by electron-builder).
+2. .env has your real TikTok cookies: TIKTOK_COOKIES="your_cookie_string"
+   - Get cookies from Chrome → F12 → Application → Cookies → tiktok.com
+   - Copy the sessionid value (or use EditThisCookie extension to export all)
+   - ⚠️ .env is in .gitignore — it will NOT be pushed to GitHub (by design).
 
-Add build script to package.json:
-"scripts": {
-"build": "vite build",
-"dist": "electron-builder"
-}
+Build and package:
+npm run dist
+(This runs: vite build → electron-builder automatically)
 
-Add config:
-"build": {
-"appId": "com.tiktok.bot",
-"productName": "TikTok Bot",
-"directories": { "output": "release" },
+.exe installer appears in release/TikTok Bot-Setup-1.0.0.exe
+
+Current build files config (package.json):
 "files": [
-"dist//*",
-"main.js",
-"preload.js",
-"sounds//*",
-"package.json"
-],
-"win": {
-"target": "nsis",
-"icon": "icon.ico"
-}
-}
+  "dist/**/*",
+  "main.js",
+  "preload.js",
+  "signServer.js",
+  ".env",
+  "sounds/**/*",
+  "package.json"
+]
 
-Run: npm run dist
-
-.exe appears in release/.
+Note: signServer.js and .env are included so the packaged app can sign
+TikTok requests and load your cookies at runtime.
 
 🔹 Packaging into a Mac .app (DMG)
 
@@ -286,6 +283,10 @@ UI indicators for event type (icons, colors).
 Cross-platform packaging (Windows & Mac releases).
 
 🔹 Troubleshooting (App Issues)
+
+If npm start fails with “running scripts is disabled on this system” (PowerShell execution policy):
+→ Double-click start.bat instead — bypasses PowerShell entirely.
+→ Or fix permanently in PowerShell (run as Admin): Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 If npm run dev or npm start fails with “concurrently not recognized” → install it: npm install --save-dev concurrently wait-on
 

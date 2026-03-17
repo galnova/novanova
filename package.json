@@ -10,7 +10,7 @@
     "electron": "electron .",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "electron .",
+    "start": "concurrently -k \"node signServer.js\" \"vite\" \"npx wait-on http://localhost:5173 && electron .\"",
     "test": "echo \"No tests configured\"",
     "dist": "npm run build && electron-builder"
   },
@@ -46,6 +46,8 @@
       "dist/**/*",
       "main.js",
       "preload.js",
+      "signServer.js",
+      ".env",
       "sounds/**/*",
       "package.json"
     ],

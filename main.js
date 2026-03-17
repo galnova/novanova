@@ -52,7 +52,7 @@ function speak(text) {
   return new Promise((resolve) => {
     const safe = safePsString(text);
     exec(
-      `powershell -Command "Add-Type -AssemblyName System.Speech; ` +
+      `powershell -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Speech; ` +
         `$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; ` +
         `$s.SelectVoice('${safePsString(TTS_VOICE)}'); ` +
         `$s.Speak('${safe}');"`,
@@ -148,13 +148,8 @@ function extractUserFields(data) {
 }
 
 // --- TikTok connection helper ---
-function connectTiktok(win, username) {
-  const cookies = process.env.TIKTOK_COOKIES;
-  if (!cookies) {
-    console.error("❌ No cookies found in .env (TIKTOK_COOKIES=...)");
-    win?.webContents?.send("tiktok-event", { type: "error", message: "No TikTok cookies found in .env" });
-    return;
-  }
+function connectTiktok(win, username, cookies) {
+  const resolvedCookies = cookies || process.env.TIKTOK_COOKIES || null;
 
   if (tiktok) {
     try {
@@ -173,9 +168,7 @@ function connectTiktok(win, username) {
   recentlyConnected = false;
 
   tiktok = new WebcastPushConnection(username, {
-    requestOptions: { headers: { cookie: cookies } },
-    // If you run a local signer, keep this. Otherwise comment it out.
-    signApiUrl: "http://localhost:8080/sign",
+    ...(resolvedCookies && { requestOptions: { headers: { cookie: resolvedCookies } } }),
   });
 
   // --- Event Handlers ---
@@ -372,11 +365,12 @@ ipcMain.on("set-mute", (_event, value) => {
   isMuted = !!value;
   console.log(isMuted ? "🔇 Muted" : "🔊 Unmuted");
 });
-ipcMain.on("connect-tiktok", (_event, username) => {
+ipcMain.on("connect-tiktok", (_event, payload) => {
   const win = BrowserWindow.getFocusedWindow();
+  const { username, cookies } = typeof payload === "object" ? payload : { username: payload, cookies: null };
   if (win && username) {
     console.log("🔗 Connecting to TikTok username:", username);
-    connectTiktok(win, username);
+    connectTiktok(win, username, cookies);
   }
 });
 

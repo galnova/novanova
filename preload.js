@@ -28,8 +28,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   setVoice: (voice) => ipcRenderer.send("set-voice", voice),
   setMute: (value) => ipcRenderer.send("set-mute", value),
 
-  // --- Connect to TikTok with username
-  connectTiktok: (username) => ipcRenderer.send("connect-tiktok", username),
+  // --- Connect to TikTok with username + cookies
+  connectTiktok: (username, cookies) => ipcRenderer.send("connect-tiktok", { username, cookies }),
 
   // --- Disconnect from TikTok
   disconnectTiktok: () => ipcRenderer.send("disconnect-tiktok"),
