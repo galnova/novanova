@@ -164,7 +164,8 @@ function Home({ soundConfig }) {
       setError("❌ Failed: Please enter a username first!");
       return;
     }
-    window.electronAPI?.connectTiktok(username.trim());
+    const cookies = localStorage.getItem("tiktokCookies") || "";
+    window.electronAPI?.connectTiktok(username.trim(), cookies.trim() || null);
     setError(null);
     setShowSummary(false);
     setLikeCount(0);
@@ -422,30 +423,72 @@ function About() {
 
 function Settings({ soundConfig, setSoundConfig }) {
   const navigate = useNavigate();
+  const [cookies, setCookies] = useState(
+    () => localStorage.getItem("tiktokCookies") || ""
+  );
+  const [cookiesSaved, setCookiesSaved] = useState(false);
+
   const handleInputChange = (key, value) => {
     setSoundConfig((prev) => ({ ...prev, [key]: value }));
   };
+
+  const handleSaveCookies = () => {
+    localStorage.setItem("tiktokCookies", cookies);
+    setCookiesSaved(true);
+    setTimeout(() => setCookiesSaved(false), 2000);
+  };
+
   return (
     <div className="sub-page">
       <button onClick={() => navigate(-1)}>
         <i className="fas fa-arrow-left"></i> Back
       </button>
       <h1>Settings</h1>
-      <p className="settings-tip">
-        Place your custom sound files inside the <code>sounds/</code> folder at
-        the root of this app. Keep them at or under <strong>5 seconds</strong>{" "}
-        for best results. For fun sound downloads, check{" "}
-        <a
-          href="https://www.myinstants.com/en/index/us/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          MyInstants.com
-        </a>
-        .
-      </p>
 
       <div className="settings-section">
+        <h3>TikTok Cookies</h3>
+        <p className="settings-tip">
+          Paste your TikTok session cookies here. Required to connect to live
+          streams.{" "}
+          <strong>
+            Get them from Chrome → F12 → Application → Cookies →
+            tiktok.com
+          </strong>
+          . Copy the <code>sessionid</code> value or use the EditThisCookie
+          extension to export all cookies as a string.
+        </p>
+        <textarea
+          rows={4}
+          style={{ width: "100%", fontFamily: "monospace", fontSize: "12px", background: "#1a1a2e", color: "#cdd6f4", border: "1px solid #444", borderRadius: "6px", padding: "8px", resize: "vertical" }}
+          placeholder="Paste your TikTok cookies here..."
+          value={cookies}
+          onChange={(e) => setCookies(e.target.value)}
+        />
+        <button onClick={handleSaveCookies} style={{ marginTop: "8px" }}>
+          {cookiesSaved ? (
+            <><i className="fas fa-check-circle"></i> Saved!</>
+          ) : (
+            <><i className="fas fa-save"></i> Save Cookies</>
+          )}
+        </button>
+      </div>
+
+      <div className="settings-section">
+        <h3>Sound Files</h3>
+        <p className="settings-tip">
+          Place your custom sound files inside the <code>sounds/</code> folder
+          at the root of this app. Keep them at or under{" "}
+          <strong>5 seconds</strong> for best results. For fun sound downloads,
+          check{" "}
+          <a
+            href="https://www.myinstants.com/en/index/us/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            MyInstants.com
+          </a>
+          .
+        </p>
         {Object.entries(soundConfig).map(([key, value]) => (
           <div key={key} className="settings-item">
             <strong>{key}</strong>
