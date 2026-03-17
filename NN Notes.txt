@@ -1,4 +1,56 @@
 NovaNova – Launch & Usage Notes
+
+🔹 FIRST-TIME SETUP — API Keys & Credentials
+
+─────────────────────────────────────────────────────────────
+STEP 1 — Get a YouTube Data API Key (free)
+─────────────────────────────────────────────────────────────
+NovaNova connects to YouTube Live Chat using the YouTube Data API v3.
+You need a free API key from Google Cloud to use it.
+
+1. Go to https://console.cloud.google.com/
+2. Sign in with your Google account.
+3. Click "Select a project" at the top → then "New Project" → give it any name
+   (e.g. "NovaNova") → click Create.
+4. In the left menu go to: APIs & Services → Library.
+5. Search for "YouTube Data API v3" → click it → click Enable.
+6. In the left menu go to: APIs & Services → Credentials.
+7. Click "+ Create Credentials" at the top → choose "API key".
+8. Your API key will be displayed — copy it and keep it safe.
+   (Optional: click "Restrict key" → under API restrictions choose
+   "YouTube Data API v3" to limit its use to this app only.)
+
+Note: The free YouTube Data API v3 quota is ~10,000 units/day,
+which is more than enough for a typical stream session.
+
+─────────────────────────────────────────────────────────────
+STEP 2 — Find your YouTube Channel ID
+─────────────────────────────────────────────────────────────
+1. Go to https://studio.youtube.com
+2. In the left sidebar click Settings → Channel → Advanced settings.
+3. Copy the "Channel ID" value (starts with "UC...").
+
+─────────────────────────────────────────────────────────────
+STEP 3 — Enter your credentials in NovaNova
+─────────────────────────────────────────────────────────────
+1. Open NovaNova (npm start).
+2. Go to the Settings page inside the app.
+3. Paste your YouTube API Key into the "YouTube API Key" field.
+4. Paste your Channel ID into the "Channel ID" field.
+5. Click Save.
+Your key is stored locally on your machine only — never sent anywhere else.
+
+─────────────────────────────────────────────────────────────
+STEP 4 — Install dependencies & run (first time only)
+─────────────────────────────────────────────────────────────
+1. Install Node.js if you haven't: https://nodejs.org  (LTS version)
+2. Open a terminal in the project folder.
+3. Run:  npm install
+4. Run:  npm start
+The Electron window will open once the frontend is ready.
+
+─────────────────────────────────────────────────────────────
+
 🔹 Development Commands
 
 Start the full app (recommended)
