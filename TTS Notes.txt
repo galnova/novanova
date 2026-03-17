@@ -1,4 +1,4 @@
-TikTok Bot – Launch & Usage Notes
+NovaNova – Launch & Usage Notes
 🔹 Development Commands
 
 Start the full app (recommended)
@@ -132,7 +132,7 @@ If Electron shows blank → make sure you started with npm start.
 Initial setup
 git init
 git add .
-git commit -m "Initial commit - TikTok bot"
+git commit -m "Initial commit - NovaNova"
 git branch -M main
 git remote add origin <your-repo-url>
 git push -u origin main
@@ -210,7 +210,7 @@ Build and package:
 npm run dist
 (This runs: vite build → electron-builder automatically)
 
-.exe installer appears in release/TikTok Bot-Setup-1.0.0.exe
+.exe installer appears in release/NovaNova-Setup-1.0.0.exe
 
 Current build files config (package.json):
 "files": [
@@ -231,7 +231,7 @@ TikTok requests and load your cookies at runtime.
 Update package.json build config:
 "build": {
 "appId": "com.tiktok.bot",
-"productName": "TikTok Bot",
+"productName": "NovaNova",
 "directories": { "output": "release" },
 "files": [
 "dist//*",
@@ -259,7 +259,7 @@ npm install --save-dev package-name
 npm uninstall package-name
 npm update
 
-TikTok Bot Notes
+NovaNova Notes
 Recent Updates
 
 ✅ Sounds must be placed in /sounds folder at project root.
@@ -309,8 +309,8 @@ Move out of any locked folder (cd ~ in PowerShell).
 If old project is stuck, just ignore it and clone fresh. Example:
 cd C:\Users\kjete\OneDrive\Desktop
 git clone https://github.com/YOUR-USERNAME/YOUR-REPO.git
- tiknova_new
-cd tiknova_new
+ novanova
+cd novanova
 
 Install all dependencies:
 npm install

@@ -42,7 +42,9 @@ function Home({ soundConfig }) {
   const [connected, setConnected] = useState(false);
   const [voice, setVoice] = useState("Zira");
   const [muted, setMuted] = useState(false);
-  const [username, setUsername] = useState("");
+  const [channelId, setChannelId] = useState(
+    () => localStorage.getItem("ytChannelId") || ""
+  );
   const [error, setError] = useState(null);
 
   const [likeCount, setLikeCount] = useState(0);
@@ -72,7 +74,6 @@ function Home({ soundConfig }) {
       }
       if (data.type === "chat") {
         setChatCount((prev) => prev + 1);
-        window.electronAPI?.speak(`${data.user} says ${data.message}`);
       }
     };
 
@@ -160,12 +161,17 @@ function Home({ soundConfig }) {
   };
 
   const handleConnect = () => {
-    if (!username.trim()) {
-      setError("❌ Failed: Please enter a username first!");
+    const apiKey = localStorage.getItem("ytApiKey") || "";
+    if (!channelId.trim()) {
+      setError("❌ Please enter a YouTube Channel ID first!");
       return;
     }
-    const cookies = localStorage.getItem("tiktokCookies") || "";
-    window.electronAPI?.connectTiktok(username.trim(), cookies.trim() || null);
+    if (!apiKey.trim()) {
+      setError("❌ YouTube API Key is missing. Add it in Settings.");
+      return;
+    }
+    localStorage.setItem("ytChannelId", channelId.trim());
+    window.electronAPI?.connectYoutube(apiKey.trim(), channelId.trim());
     setError(null);
     setShowSummary(false);
     setLikeCount(0);
@@ -175,7 +181,7 @@ function Home({ soundConfig }) {
   };
 
   const handleDisconnect = () => {
-    window.electronAPI?.disconnectTiktok?.();
+    window.electronAPI?.disconnectYoutube?.();
     setConnected(false);
     setShowSummary(true);
   };
@@ -189,7 +195,7 @@ function Home({ soundConfig }) {
           {connected ? (
             <>
               <i className="fas fa-circle" style={{ color: "#22c55e" }}></i>{" "}
-              Connected to TikTok
+              Connected to YouTube
             </>
           ) : (
             <>
@@ -201,16 +207,16 @@ function Home({ soundConfig }) {
         <HamburgerMenu />
       </div>
 
-      <h1>TikTok Live Bot</h1>
+      <h1>YouTube Live Bot</h1>
 
       <div className="username-input">
         <div className="username-group">
           <div className="username-row">
             <input
               type="text"
-              placeholder="Enter TikTok username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter YouTube Channel ID (UCxxx...)"
+              value={channelId}
+              onChange={(e) => setChannelId(e.target.value)}
             />
             <button
               onClick={handleConnect}
@@ -423,19 +429,25 @@ function About() {
 
 function Settings({ soundConfig, setSoundConfig }) {
   const navigate = useNavigate();
-  const [cookies, setCookies] = useState(
-    () => localStorage.getItem("tiktokCookies") || ""
-  );
-  const [cookiesSaved, setCookiesSaved] = useState(false);
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem("ytApiKey") || "");
+  const [channelId, setChannelId] = useState(() => localStorage.getItem("ytChannelId") || "");
+  const [credsSaved, setCredsSaved] = useState(false);
 
   const handleInputChange = (key, value) => {
     setSoundConfig((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSaveCookies = () => {
-    localStorage.setItem("tiktokCookies", cookies);
-    setCookiesSaved(true);
-    setTimeout(() => setCookiesSaved(false), 2000);
+  const handleSaveCreds = () => {
+    localStorage.setItem("ytApiKey", apiKey.trim());
+    localStorage.setItem("ytChannelId", channelId.trim());
+    setCredsSaved(true);
+    setTimeout(() => setCredsSaved(false), 2000);
+  };
+
+  const fieldStyle = {
+    width: "100%", marginBottom: "12px", fontFamily: "monospace",
+    fontSize: "12px", background: "#1a1a2e", color: "#cdd6f4",
+    border: "1px solid #444", borderRadius: "6px", padding: "8px",
   };
 
   return (
@@ -446,29 +458,35 @@ function Settings({ soundConfig, setSoundConfig }) {
       <h1>Settings</h1>
 
       <div className="settings-section">
-        <h3>TikTok Cookies</h3>
+        <h3>YouTube API Credentials</h3>
         <p className="settings-tip">
-          Paste your TikTok session cookies here. Required to connect to live
-          streams.{" "}
-          <strong>
-            Get them from Chrome → F12 → Application → Cookies →
-            tiktok.com
-          </strong>
-          . Copy the <code>sessionid</code> value or use the EditThisCookie
-          extension to export all cookies as a string.
+          Required to connect to YouTube live streams. Get a free API key at{" "}
+          <strong>console.cloud.google.com</strong> — create a project, enable{" "}
+          <strong>YouTube Data API v3</strong>, then create an API key. The
+          Channel ID starts with <code>UC</code> and is found in the channel
+          URL (youtube.com/channel/<code>UCxxxxxx</code>).
         </p>
-        <textarea
-          rows={4}
-          style={{ width: "100%", fontFamily: "monospace", fontSize: "12px", background: "#1a1a2e", color: "#cdd6f4", border: "1px solid #444", borderRadius: "6px", padding: "8px", resize: "vertical" }}
-          placeholder="Paste your TikTok cookies here..."
-          value={cookies}
-          onChange={(e) => setCookies(e.target.value)}
+        <label style={{ display: "block", marginBottom: "4px" }}>API Key</label>
+        <input
+          type="password"
+          style={fieldStyle}
+          placeholder="AIza..."
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
         />
-        <button onClick={handleSaveCookies} style={{ marginTop: "8px" }}>
-          {cookiesSaved ? (
+        <label style={{ display: "block", marginBottom: "4px" }}>Channel ID</label>
+        <input
+          type="text"
+          style={fieldStyle}
+          placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx"
+          value={channelId}
+          onChange={(e) => setChannelId(e.target.value)}
+        />
+        <button onClick={handleSaveCreds} style={{ marginTop: "4px" }}>
+          {credsSaved ? (
             <><i className="fas fa-check-circle"></i> Saved!</>
           ) : (
-            <><i className="fas fa-save"></i> Save Cookies</>
+            <><i className="fas fa-save"></i> Save</>
           )}
         </button>
       </div>

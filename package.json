@@ -1,16 +1,16 @@
 {
-  "name": "tiknova",
+  "name": "novanova",
   "version": "1.0.0",
   "description": "TikTok Live Bot with Electron + React + TTS",
   "main": "main.js",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k \"node signServer.js\" \"vite\" \"npx wait-on http://localhost:5173 && electron .\"",
+    "dev": "concurrently -k \"vite\" \"npx wait-on http://localhost:5173 && electron .\"",
     "vite": "vite",
     "electron": "electron .",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "concurrently -k \"node signServer.js\" \"vite\" \"npx wait-on http://localhost:5173 && electron .\"",
+    "start": "concurrently -k \"vite\" \"npx wait-on http://localhost:5173 && electron .\"",
     "test": "echo \"No tests configured\"",
     "dist": "npm run build && electron-builder"
   },
@@ -18,16 +18,12 @@
   "license": "MIT",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.6.0",
-    "body-parser": "^1.20.2",
-    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "electron": "^29.0.0",
-    "express": "^4.18.2",
     "play-sound": "^1.1.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.30.1",
-    "tiktok-live-connector": "^2.0.7-beta1"
+    "react-router-dom": "^6.30.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.0.2",
@@ -37,8 +33,8 @@
     "wait-on": "^7.2.0"
   },
   "build": {
-    "appId": "com.tiknova.app",
-    "productName": "TikTok Bot",
+    "appId": "com.novanova.app",
+    "productName": "NovaNova",
     "directories": {
       "output": "release"
     },
@@ -46,7 +42,6 @@
       "dist/**/*",
       "main.js",
       "preload.js",
-      "signServer.js",
       ".env",
       "sounds/**/*",
       "package.json"
