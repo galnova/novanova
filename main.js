@@ -1,7 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
-import { WebcastPushConnection } from "tiktok-live-connector";
 import { exec } from "child_process";
 import player from "play-sound";
 import dotenv from "dotenv";
@@ -19,9 +18,9 @@ let speechQueue = [];
 let isSpeaking = false;
 const audioPlayer = player();
 let isMuted = false;
-let tiktok = null;
-let totalLikes = 0;
-let recentlyConnected = false; // used to suppress transient errors
+
+// --- YouTube polling state ---
+let ytPoller = null;
 
 // --- Chat de-duplication (LRU of recent message IDs) ---
 const SEEN_MAX = 1000;
@@ -106,230 +105,201 @@ function enqueueSpeech(text) {
   processQueue();
 }
 
-// --- Robust extraction helpers ---
-function extractChatId(data) {
-  return (
-    data?.msgId ||
-    data?.messageId ||
-    data?.id ||
-    data?.eventId ||
-    `${data?.userId || data?.authorId || data?.uid || data?.uniqueId || "u"}-${data?.comment || data?.text || ""}-${data?.createTime || data?.ts || ""}`
-  );
+// --- YouTube API helpers ---
+async function ytFetch(url) {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`YouTube API ${res.status}: ${body}`);
+  }
+  return res.json();
 }
 
-function extractUserFields(data) {
-  const nickname =
-    data?.nickname ??
-    data?.user?.nickname ??
-    data?.sender?.nickname ??
-    data?.author?.nickname ??
-    data?.profile?.nickname ??
-    null;
+async function resolveLiveChatId(apiKey, channelId) {
+  const searchUrl =
+    `https://www.googleapis.com/youtube/v3/search` +
+    `?part=id&channelId=${encodeURIComponent(channelId)}` +
+    `&eventType=live&type=video&key=${encodeURIComponent(apiKey)}`;
+  const searchData = await ytFetch(searchUrl);
 
-  const uniqueId =
-    data?.uniqueId ??
-    data?.user?.uniqueId ??
-    data?.sender?.uniqueId ??
-    data?.author?.uniqueId ??
-    data?.profile?.uniqueId ??
-    null;
+  const videoId = searchData?.items?.[0]?.id?.videoId;
+  if (!videoId) throw new Error("No active live stream found for this channel.");
 
-  const userId =
-    data?.userId ??
-    data?.authorId ??
-    data?.uid ??
-    data?.user?.id ??
-    data?.sender?.id ??
-    data?.author?.id ??
-    null;
+  const videoUrl =
+    `https://www.googleapis.com/youtube/v3/videos` +
+    `?part=liveStreamingDetails&id=${encodeURIComponent(videoId)}` +
+    `&key=${encodeURIComponent(apiKey)}`;
+  const videoData = await ytFetch(videoUrl);
 
-  const displayName = nickname || uniqueId || (userId ? `user_${userId}` : "unknown_user");
-  return { nickname: nickname || null, uniqueId: uniqueId || null, userId: userId ?? null, displayName };
+  const chatId = videoData?.items?.[0]?.liveStreamingDetails?.activeLiveChatId;
+  if (!chatId) throw new Error("Live stream found but has no active chat.");
+  return chatId;
 }
 
-// --- TikTok connection helper ---
-function connectTiktok(win, username, cookies) {
-  const resolvedCookies = cookies || process.env.TIKTOK_COOKIES || null;
+function mapYtItemToEvent(item) {
+  const snippet = item.snippet || {};
+  const author = item.authorDetails || {};
+  const type = snippet.type;
 
-  if (tiktok) {
-    try {
-      tiktok.removeAllListeners();
-      tiktok.disconnect();
-    } catch (err) {
-      console.error("Error disconnecting previous connection:", err);
-    }
-    tiktok = null;
-    speechQueue = [];
-    isSpeaking = false;
-    totalLikes = 0;
-    clearSeen();
+  const displayName = author.displayName || "unknown_user";
+  const userId = author.channelId || null;
+  const chatId = item.id || `${userId}-${snippet.publishedAt}`;
+
+  let internalType, message, soundFile;
+
+  if (type === "textMessageEvent") {
+    internalType = "chat";
+    const rawMsg = snippet.displayMessage || "";
+    message = `${displayName}: ${rawMsg}`;
+
+  } else if (type === "superChatEvent") {
+    internalType = "gift";
+    const amount = snippet.superChatDetails?.amountDisplayString || "";
+    const tier = snippet.superChatDetails?.tier || 1;
+    message = `${displayName} sent a Super Chat: ${amount}`;
+    soundFile = tier >= 4 ? "sounds/big-gift.mp3" : "sounds/small-gift.mp3";
+
+  } else if (type === "superStickerEvent") {
+    internalType = "gift";
+    const amount = snippet.superStickerDetails?.amountDisplayString || "";
+    message = `${displayName} sent a Super Sticker: ${amount}`;
+    soundFile = "sounds/small-gift.mp3";
+
+  } else if (type === "newSponsorEvent" || type === "memberMilestoneChatEvent") {
+    internalType = "follow";
+    const months = snippet.memberMilestoneChatDetails?.memberMonth || null;
+    message = months
+      ? `${displayName} has been a member for ${months} months!`
+      : `${displayName} became a member!`;
+    soundFile = "sounds/follow.mp3";
+
+  } else {
+    return null;
   }
 
-  recentlyConnected = false;
+  return { internalType, chatId, displayName, userId, message, soundFile, rawItem: item };
+}
 
-  tiktok = new WebcastPushConnection(username, {
-    ...(resolvedCookies && { requestOptions: { headers: { cookie: resolvedCookies } } }),
-  });
+// --- YouTube connection ---
+function connectYoutube(win, apiKey, channelId) {
+  disconnectYoutube(win, false);
+  clearSeen();
+  speechQueue = [];
+  isSpeaking = false;
 
-  // --- Event Handlers ---
-  tiktok.on("connected", (state) => {
-    console.log("✅ Connected:", state.roomId);
-    recentlyConnected = true;
-    setTimeout(() => { recentlyConnected = false; }, 2000); // 2s window to suppress transient errors
-    win.webContents.send("tiktok-status", { connected: true, roomId: state.roomId });
-  });
+  let aborted = false;
 
-  tiktok.on("disconnected", () => {
-    console.log("⚠️ Disconnected");
-    win.webContents.send("tiktok-status", { connected: false });
-    speechQueue = [];
-    isSpeaking = false;
-    clearSeen();
-  });
+  // Store abort handle immediately so disconnectYoutube can cancel during resolve
+  ytPoller = { abort: () => { aborted = true; } };
 
-  tiktok.on("streamEnd", () => {
-    console.log("🛑 Stream ended");
-    win.webContents.send("tiktok-event", { type: "streamEnd" });
-  });
+  resolveLiveChatId(apiKey, channelId)
+    .then((liveChatId) => {
+      if (aborted) return;
+      ytLiveChatId = liveChatId;
+      console.log("✅ Connected to YouTube live chat:", liveChatId);
+      win.webContents.send("tiktok-status", { connected: true, roomId: liveChatId });
 
-  tiktok.on("chat", (data) => {
-    const chatId = extractChatId(data);
-    if (!rememberId(chatId)) return;
+      let pageToken = null;
+      let pollDelayMs = 5000;
+      let firstPoll = true;
 
-    const { nickname, uniqueId, userId, displayName } = extractUserFields(data);
-    const rawMsg = (data?.comment ?? data?.text ?? "").trim();
+      async function poll() {
+        if (aborted) return;
+        try {
+          let url =
+            `https://www.googleapis.com/youtube/v3/liveChat/messages` +
+            `?liveChatId=${encodeURIComponent(liveChatId)}` +
+            `&part=snippet,authorDetails&maxResults=200` +
+            `&key=${encodeURIComponent(apiKey)}`;
+          if (pageToken) url += `&pageToken=${encodeURIComponent(pageToken)}`;
 
-    // Force username to appear even if UI only prints `message`
-    const renderedMessage = displayName ? `${displayName}: ${rawMsg}` : rawMsg || displayName || "message";
+          const data = await ytFetch(url);
+          pageToken = data.nextPageToken || pageToken;
 
-    console.log("📥 Chat event:", chatId, renderedMessage);
+          const apiInterval = data.pollingIntervalMillis;
+          if (typeof apiInterval === "number" && apiInterval > 0) {
+            pollDelayMs = Math.max(apiInterval, 2000);
+          }
 
-    // Send EVERY common field + nested object
-    win.webContents.send("tiktok-event", {
-      type: "chat",
-      id: chatId,
-      // identity variants:
-      user: displayName,
-      username: uniqueId || displayName,
-      displayName,
-      nickname: nickname || displayName,
-      uniqueId: uniqueId || null,
-      userId: userId ?? null,
-      userObj: { uniqueId: uniqueId || null, nickname: nickname || null, userId: userId ?? null, displayName },
-      // messaging:
-      message: renderedMessage,       // <-- UI that only renders `message` will now show "name: text"
-      rawMessage: rawMsg,             // original text only
-      meta: data,
-    });
+          // Skip first batch — these are historical messages from before we connected
+          if (firstPoll) {
+            firstPoll = false;
+            if (!aborted) ytPoller = setTimeout(poll, pollDelayMs);
+            return;
+          }
 
-    if (rawMsg) enqueueSpeech(`${displayName} says ${rawMsg}`);
-  });
+          for (const item of data.items || []) {
+            const mapped = mapYtItemToEvent(item);
+            if (!mapped) continue;
 
-  tiktok.on("like", (data) => {
-    if (typeof data.totalLikeCount === "number") {
-      totalLikes = data.totalLikeCount;
-    } else {
-      totalLikes += data.likeCount || 0;
-    }
-    const { nickname, uniqueId, userId, displayName } = extractUserFields(data);
-    win.webContents.send("tiktok-event", {
-      type: "like",
-      user: displayName,
-      username: uniqueId || displayName,
-      displayName,
-      nickname: nickname || displayName,
-      uniqueId: uniqueId || null,
-      userId: userId ?? null,
-      userObj: { uniqueId: uniqueId || null, nickname: nickname || null, userId: userId ?? null, displayName },
-      message: `${displayName} liked`,
-      likes: totalLikes,
-      meta: data,
-    });
-  });
+            const { internalType, chatId, displayName, userId, message, soundFile, rawItem } = mapped;
+            if (!rememberId(chatId)) continue;
 
-  tiktok.on("follow", (data) => {
-    const { nickname, uniqueId, userId, displayName } = extractUserFields(data);
-    win.webContents.send("tiktok-event", {
-      type: "follow",
-      user: displayName,
-      username: uniqueId || displayName,
-      displayName,
-      nickname: nickname || displayName,
-      uniqueId: uniqueId || null,
-      userId: userId ?? null,
-      userObj: { uniqueId: uniqueId || null, nickname: nickname || null, userId: userId ?? null, displayName },
-      message: `${displayName} followed!`,
-      meta: data,
-    });
-    enqueueSpeech(`SOUND::sounds/follow.mp3`);
-  });
+            win.webContents.send("tiktok-event", {
+              type: internalType,
+              id: chatId,
+              user: displayName,
+              username: displayName,
+              displayName,
+              nickname: displayName,
+              uniqueId: userId,
+              userId,
+              message,
+              rawMessage: rawItem?.snippet?.displayMessage || "",
+              meta: rawItem,
+            });
 
-  tiktok.on("gift", (data) => {
-    const { nickname, uniqueId, userId, displayName } = extractUserFields(data);
+            if (internalType === "chat") {
+              const rawMsg = rawItem?.snippet?.displayMessage || "";
+              if (rawMsg) enqueueSpeech(`${displayName} says ${rawMsg}`);
+            } else if (internalType === "gift") {
+              enqueueSpeech(`SOUND::${soundFile}`);
+            } else if (internalType === "follow") {
+              enqueueSpeech(`SOUND::sounds/follow.mp3`);
+            }
+          }
+        } catch (err) {
+          console.error("YouTube poll error:", err);
+          if (!aborted) {
+            win.webContents.send("tiktok-event", {
+              type: "error",
+              message: String(err?.message || err),
+            });
+          }
+        }
 
-    let msg = `${displayName} sent ${data.giftName}`;
-    let soundFile = "sounds/small-gift.mp3";
-    if (data.repeatEnd) {
-      msg = `${displayName} sent a COMBO of ${data.giftName} x${data.repeatCount}`;
-      soundFile = "sounds/multi-gift.mp3";
-    } else if ((data.diamondCount || 0) >= 100) {
-      msg = `${displayName} sent a BIG gift: ${data.giftName}`;
-      soundFile = "sounds/big-gift.mp3";
-    }
-
-    win.webContents.send("tiktok-event", {
-      type: "gift",
-      user: displayName,
-      username: uniqueId || displayName,
-      displayName,
-      nickname: nickname || displayName,
-      uniqueId: uniqueId || null,
-      userId: userId ?? null,
-      userObj: { uniqueId: uniqueId || null, nickname: nickname || null, userId: userId ?? null, displayName },
-      message: msg,
-      meta: data,
-    });
-    enqueueSpeech(`SOUND::${soundFile}`);
-  });
-
-  tiktok.on("share", (data) => {
-    const { nickname, uniqueId, userId, displayName } = extractUserFields(data);
-    const msg = `${displayName} shared the stream!`;
-    win.webContents.send("tiktok-event", {
-      type: "share",
-      user: displayName,
-      username: uniqueId || displayName,
-      displayName,
-      nickname: nickname || displayName,
-      uniqueId: uniqueId || null,
-      userId: userId ?? null,
-      userObj: { uniqueId: uniqueId || null, nickname: nickname || null, userId: userId ?? null, displayName },
-      message: msg,
-      meta: data,
-    });
-    enqueueSpeech(`SOUND::sounds/share.mp3`);
-  });
-
-  tiktok.on("error", (err) => {
-    console.error("TikTok error:", err);
-    // Suppress transient error right before a successful connect
-    setTimeout(() => {
-      if (!recentlyConnected) {
-        win.webContents.send("tiktok-event", { type: "error", message: String(err?.message || err) });
+        if (!aborted) ytPoller = setTimeout(poll, pollDelayMs);
       }
-    }, 1200);
-  });
 
-  tiktok.connect().catch((err) => {
-    console.error("❌ connect() failed:", err);
-    setTimeout(() => {
-      if (!recentlyConnected) {
-        const msg = `❌ Failed to connect: ${err.message || err}`;
-        win.webContents.send("tiktok-event", { type: "error", message: msg });
+      poll();
+    })
+    .catch((err) => {
+      console.error("❌ YouTube connect error:", err);
+      if (!aborted) {
+        win.webContents.send("tiktok-event", {
+          type: "error",
+          message: `Failed to connect: ${err.message || err}`,
+        });
         win.webContents.send("tiktok-status", { connected: false });
       }
-    }, 1200);
-  });
+    });
+}
+
+function disconnectYoutube(win, notify = true) {
+  if (ytPoller) {
+    if (typeof ytPoller === "object" && ytPoller.abort) {
+      ytPoller.abort();
+    } else {
+      clearTimeout(ytPoller);
+    }
+    ytPoller = null;
+  }
+  speechQueue = [];
+  isSpeaking = false;
+  clearSeen();
+  if (notify && win) {
+    win.webContents.send("tiktok-status", { connected: false });
+  }
 }
 
 // --- Window ---
@@ -365,34 +335,24 @@ ipcMain.on("set-mute", (_event, value) => {
   isMuted = !!value;
   console.log(isMuted ? "🔇 Muted" : "🔊 Unmuted");
 });
-ipcMain.on("connect-tiktok", (_event, payload) => {
+
+ipcMain.on("connect-youtube", (_event, payload) => {
   const win = BrowserWindow.getFocusedWindow();
-  const { username, cookies } = typeof payload === "object" ? payload : { username: payload, cookies: null };
-  if (win && username) {
-    console.log("🔗 Connecting to TikTok username:", username);
-    connectTiktok(win, username, cookies);
+  const { apiKey, channelId } = typeof payload === "object" ? payload : {};
+  if (win && apiKey && channelId) {
+    console.log("🔗 Connecting to YouTube channel:", channelId);
+    connectYoutube(win, apiKey, channelId);
+  } else if (win) {
+    win.webContents.send("tiktok-event", {
+      type: "error",
+      message: "API Key and Channel ID are required. Go to Settings.",
+    });
   }
 });
 
-ipcMain.on("disconnect-tiktok", (_event) => {
-  if (tiktok) {
-    try {
-      tiktok.removeAllListeners();
-      tiktok.disconnect();
-    } catch (err) {
-      console.error("Error disconnecting:", err);
-    }
-    tiktok = null;
-  }
-  speechQueue = [];
-  isSpeaking = false;
-  totalLikes = 0;
-  clearSeen();
-
+ipcMain.on("disconnect-youtube", (_event) => {
   const win = BrowserWindow.getFocusedWindow();
-  if (win) {
-    win.webContents.send("tiktok-status", { connected: false });
-  }
+  disconnectYoutube(win, true);
 });
 
 // --- File Picker for custom sounds ---

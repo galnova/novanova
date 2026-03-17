@@ -28,11 +28,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   setVoice: (voice) => ipcRenderer.send("set-voice", voice),
   setMute: (value) => ipcRenderer.send("set-mute", value),
 
-  // --- Connect to TikTok with username + cookies
-  connectTiktok: (username, cookies) => ipcRenderer.send("connect-tiktok", { username, cookies }),
+  // --- Connect to YouTube live stream
+  connectYoutube: (apiKey, channelId) => ipcRenderer.send("connect-youtube", { apiKey, channelId }),
 
-  // --- Disconnect from TikTok
-  disconnectTiktok: () => ipcRenderer.send("disconnect-tiktok"),
+  // --- Disconnect from YouTube
+  disconnectYoutube: () => ipcRenderer.send("disconnect-youtube"),
 
   // --- File picker for sounds
   pickFile: () => ipcRenderer.invoke("dialog:openFile"),
