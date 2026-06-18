@@ -1,7 +1,7 @@
 // tiktok-test.js
 const { WebcastPushConnection } = require('tiktok-live-connector');
 
-const username = "beccawalkingera"; // 👈 your TikTok handle (no @)
+const username = "greyvoth"; // 👈 your TikTok handle (no @)
 console.log("🔗 Attempting to connect as:", username);
 
 let tiktok = new WebcastPushConnection(username);

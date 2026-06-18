@@ -7,7 +7,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   onTiktokEvent: (callback) => {
     const listener = (_event, data) => callback(data);
     ipcRenderer.on("tiktok-event", listener);
-    return listener; // return so React can remove later
+    return listener;
   },
   removeTiktokEvent: (listener) => {
     ipcRenderer.removeListener("tiktok-event", listener);
@@ -28,11 +28,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   setVoice: (voice) => ipcRenderer.send("set-voice", voice),
   setMute: (value) => ipcRenderer.send("set-mute", value),
 
-  // --- Connect to YouTube live stream
-  connectYoutube: (apiKey, channelId) => ipcRenderer.send("connect-youtube", { apiKey, channelId }),
-
-  // --- Disconnect from YouTube
-  disconnectYoutube: () => ipcRenderer.send("disconnect-youtube"),
+  // --- Connect / disconnect TikTok
+  connectTiktok: (username) => ipcRenderer.send("connect-tiktok", username),
+  disconnectTiktok: () => ipcRenderer.send("disconnect-tiktok"),
 
   // --- File picker for sounds
   pickFile: () => ipcRenderer.invoke("dialog:openFile"),

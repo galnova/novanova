@@ -42,8 +42,8 @@ function Home({ soundConfig }) {
   const [connected, setConnected] = useState(false);
   const [voice, setVoice] = useState("Zira");
   const [muted, setMuted] = useState(false);
-  const [channelId, setChannelId] = useState(
-    () => localStorage.getItem("ytChannelId") || ""
+  const [username, setUsername] = useState(
+    () => localStorage.getItem("tiktokUsername") || "greyvoth"
   );
   const [error, setError] = useState(null);
 
@@ -133,6 +133,7 @@ function Home({ soundConfig }) {
   };
 
   const checkMilestone = (count) => {
+    if (count <= 0) return;
     let isMilestone = false;
     if (count <= 500 && count % 100 === 0) {
       isMilestone = true;
@@ -161,17 +162,12 @@ function Home({ soundConfig }) {
   };
 
   const handleConnect = () => {
-    const apiKey = localStorage.getItem("ytApiKey") || "";
-    if (!channelId.trim()) {
-      setError("❌ Please enter a YouTube Channel ID first!");
+    if (!username.trim()) {
+      setError("❌ Please enter a TikTok username first!");
       return;
     }
-    if (!apiKey.trim()) {
-      setError("❌ YouTube API Key is missing. Add it in Settings.");
-      return;
-    }
-    localStorage.setItem("ytChannelId", channelId.trim());
-    window.electronAPI?.connectYoutube(apiKey.trim(), channelId.trim());
+    localStorage.setItem("tiktokUsername", username.trim());
+    window.electronAPI?.connectTiktok(username.trim());
     setError(null);
     setShowSummary(false);
     setLikeCount(0);
@@ -181,7 +177,7 @@ function Home({ soundConfig }) {
   };
 
   const handleDisconnect = () => {
-    window.electronAPI?.disconnectYoutube?.();
+    window.electronAPI?.disconnectTiktok?.();
     setConnected(false);
     setShowSummary(true);
   };
@@ -195,7 +191,7 @@ function Home({ soundConfig }) {
           {connected ? (
             <>
               <i className="fas fa-circle" style={{ color: "#22c55e" }}></i>{" "}
-              Connected to YouTube
+              Connected to TikTok
             </>
           ) : (
             <>
@@ -207,16 +203,16 @@ function Home({ soundConfig }) {
         <HamburgerMenu />
       </div>
 
-      <h1>YouTube Live Bot</h1>
+      <h1>TikTok Live Bot</h1>
 
       <div className="username-input">
         <div className="username-group">
           <div className="username-row">
             <input
               type="text"
-              placeholder="Enter YouTube Channel ID (UCxxx...)"
-              value={channelId}
-              onChange={(e) => setChannelId(e.target.value)}
+              placeholder="TikTok username (no @)"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
             />
             <button
               onClick={handleConnect}
@@ -405,12 +401,12 @@ function About() {
       </button>
       <h1>About</h1>
       <p>
-        Hi, I’m <strong>Keith Jeter</strong> — a web/app developer, artist, and
+        Hi, I'm <strong>Keith Jeter</strong> — a web/app developer, artist, and
         designer. I built this TikTok Live Bot as a free tool for creators like
         you.
       </p>
       <p>
-        You’re welcome to use it for free. If you’d like to support my work,
+        You're welcome to use it for free. If you'd like to support my work,
         donations are very appreciated:
       </p>
       <p>
@@ -429,25 +425,9 @@ function About() {
 
 function Settings({ soundConfig, setSoundConfig }) {
   const navigate = useNavigate();
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem("ytApiKey") || "");
-  const [channelId, setChannelId] = useState(() => localStorage.getItem("ytChannelId") || "");
-  const [credsSaved, setCredsSaved] = useState(false);
 
   const handleInputChange = (key, value) => {
     setSoundConfig((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSaveCreds = () => {
-    localStorage.setItem("ytApiKey", apiKey.trim());
-    localStorage.setItem("ytChannelId", channelId.trim());
-    setCredsSaved(true);
-    setTimeout(() => setCredsSaved(false), 2000);
-  };
-
-  const fieldStyle = {
-    width: "100%", marginBottom: "12px", fontFamily: "monospace",
-    fontSize: "12px", background: "#1a1a2e", color: "#cdd6f4",
-    border: "1px solid #444", borderRadius: "6px", padding: "8px",
   };
 
   return (
@@ -456,40 +436,6 @@ function Settings({ soundConfig, setSoundConfig }) {
         <i className="fas fa-arrow-left"></i> Back
       </button>
       <h1>Settings</h1>
-
-      <div className="settings-section">
-        <h3>YouTube API Credentials</h3>
-        <p className="settings-tip">
-          Required to connect to YouTube live streams. Get a free API key at{" "}
-          <strong>console.cloud.google.com</strong> — create a project, enable{" "}
-          <strong>YouTube Data API v3</strong>, then create an API key. The
-          Channel ID starts with <code>UC</code> and is found in the channel
-          URL (youtube.com/channel/<code>UCxxxxxx</code>).
-        </p>
-        <label style={{ display: "block", marginBottom: "4px" }}>API Key</label>
-        <input
-          type="password"
-          style={fieldStyle}
-          placeholder="AIza..."
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-        />
-        <label style={{ display: "block", marginBottom: "4px" }}>Channel ID</label>
-        <input
-          type="text"
-          style={fieldStyle}
-          placeholder="UCxxxxxxxxxxxxxxxxxxxxxxxx"
-          value={channelId}
-          onChange={(e) => setChannelId(e.target.value)}
-        />
-        <button onClick={handleSaveCreds} style={{ marginTop: "4px" }}>
-          {credsSaved ? (
-            <><i className="fas fa-check-circle"></i> Saved!</>
-          ) : (
-            <><i className="fas fa-save"></i> Save</>
-          )}
-        </button>
-      </div>
 
       <div className="settings-section">
         <h3>Sound Files</h3>
