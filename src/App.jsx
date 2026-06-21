@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -52,6 +52,7 @@ function Home({ soundConfig }) {
   const [shareCount, setShareCount] = useState(0);
   const [chatCount, setChatCount] = useState(0);
 
+  const [recentFollowers, setRecentFollowers] = useState([]);
   const [showTests, setShowTests] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
 
@@ -68,6 +69,7 @@ function Home({ soundConfig }) {
       }
       if (data.type === "follow") {
         setFollowCount((prev) => prev + 1);
+        setRecentFollowers((prev) => [data.user, ...prev].slice(0, 5));
       }
       if (data.type === "share") {
         setShareCount((prev) => prev + 1);
@@ -95,7 +97,7 @@ function Home({ soundConfig }) {
     };
   }, []);
 
-  const addTestEvent = (type, msg, sound = null, speak = false) => {
+  const addTestEvent = (type, msg, sound = null, speak = false, user = null) => {
     const event = { type, message: msg };
     setEvents((prev) => [event, ...prev].slice(0, 50));
     if (sound) window.electronAPI?.playSound(sound);
@@ -108,7 +110,10 @@ function Home({ soundConfig }) {
         return newCount;
       });
     }
-    if (type === "follow") setFollowCount((prev) => prev + 1);
+    if (type === "follow") {
+      setFollowCount((prev) => prev + 1);
+      if (user) setRecentFollowers((prev) => [user, ...prev].slice(0, 5));
+    }
     if (type === "share") setShareCount((prev) => prev + 1);
     if (type === "chat") setChatCount((prev) => prev + 1);
   };
@@ -126,25 +131,15 @@ function Home({ soundConfig }) {
     "Epic",
   ];
 
-  const getRandomWord = () => {
-    return celebratoryWords[
-      Math.floor(Math.random() * celebratoryWords.length)
-    ];
-  };
-
   const checkMilestone = (count) => {
     if (count <= 0) return;
-    let isMilestone = false;
-    if (count <= 500 && count % 100 === 0) {
-      isMilestone = true;
-    } else if (count > 500 && count <= 10000 && count % 500 === 0) {
-      isMilestone = true;
-    } else if (count > 10000 && count % 1000 === 0) {
-      isMilestone = true;
-    }
+    const isMilestone =
+      (count <= 500 && count % 100 === 0) ||
+      (count > 500 && count <= 10000 && count % 500 === 0) ||
+      (count > 10000 && count % 1000 === 0);
 
     if (isMilestone) {
-      const word = getRandomWord();
+      const word = celebratoryWords[Math.floor(Math.random() * celebratoryWords.length)];
       window.electronAPI?.speak(`${count} likes... ${word}!`);
     }
   };
@@ -174,6 +169,7 @@ function Home({ soundConfig }) {
     setFollowCount(0);
     setShareCount(0);
     setChatCount(0);
+    setRecentFollowers([]);
   };
 
   const handleDisconnect = () => {
@@ -246,6 +242,20 @@ function Home({ soundConfig }) {
       <div className="like-counter">
         <i className="fas fa-heart"></i> Likes: {likeCount}
       </div>
+
+      {/* Recent Followers */}
+      {recentFollowers.length > 0 && (
+        <div className="recent-followers">
+          <span className="recent-followers-label">
+            <i className="fas fa-user-plus"></i> Recent Followers
+          </span>
+          <ul>
+            {recentFollowers.map((name, i) => (
+              <li key={i}>{name}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="controls">
         <button onClick={toggleVoice}>
@@ -324,16 +334,18 @@ function Home({ soundConfig }) {
             <i className="fas fa-thumbs-up"></i> Test Like
           </button>
           <button
-            onClick={() =>
-              addTestEvent("follow", "User654 followed! ✅", soundConfig.follow)
-            }
+            onClick={() => {
+              addTestEvent("follow", "User654 followed! ✅", soundConfig.follow, false, "User654");
+              window.electronAPI?.speak("Thank you User654 for the follow!");
+            }}
           >
             <i className="fas fa-user-plus"></i> Test Follow
           </button>
           <button
-            onClick={() =>
-              addTestEvent("share", "User111 shared! 🔄", soundConfig.share)
-            }
+            onClick={() => {
+              addTestEvent("share", "User111 shared! 🔄", soundConfig.share);
+              window.electronAPI?.speak("Thank you User111 for the share!");
+            }}
           >
             <i className="fas fa-share"></i> Test Share
           </button>
@@ -364,7 +376,7 @@ function Home({ soundConfig }) {
                 <i className="fas fa-heart"></i> Likes: {likeCount}
               </li>
               <li>
-                <i className="fas fa-user-plus"></i> Follows: {followCount}
+                <i className="fas fa-user-plus"></i> New Followers: {followCount}
               </li>
               <li>
                 <i className="fas fa-share"></i> Shares: {shareCount}

@@ -22,6 +22,43 @@ h1 {
   border-bottom: solid 1px #00c8be;
 }
 
+/* --- Recent Followers --- */
+.recent-followers {
+  background: #1d2a4d;
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.recent-followers-label {
+  color: #3b82f6;
+  font-size: 13px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.recent-followers ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.recent-followers ul li {
+  background: #2d3d6b;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #93c5fd;
+}
+
 /* --- Controls --- */
 .controls {
   display: flex;

@@ -20,12 +20,17 @@ let isMuted = false;
 let tiktokConnection = null;
 
 function safePsString(str = "") {
-  return String(str).replace(/'/g, "''");
+  return String(str)
+    .replace(/[^\x20-\x7E]/g, " ")
+    .replace(/'/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function speak(text) {
   return new Promise((resolve) => {
     const safe = safePsString(text);
+    if (!safe) { resolve(); return; }
     exec(
       `powershell -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Speech; ` +
         `$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; ` +
@@ -70,7 +75,7 @@ async function processQueue() {
 
 function enqueueSpeech(text) {
   if (isMuted) return;
-  if (speechQueue.length > 200) speechQueue.shift();
+  if (speechQueue.length >= 8) speechQueue.splice(0, speechQueue.length - 7);
   speechQueue.push(text);
   processQueue();
 }
@@ -108,19 +113,33 @@ async function connectTiktok(win, username) {
 
     tiktokConnection = connection;
 
+    const seenMsgIds = new Set();
+    function seen(data) {
+      const id = String(data.msgId || "");
+      if (!id) return false;
+      if (seenMsgIds.has(id)) return true;
+      seenMsgIds.add(id);
+      if (seenMsgIds.size > 3000) seenMsgIds.delete(seenMsgIds.values().next().value);
+      return false;
+    }
+
     connection.on("chat", (data) => {
+      if (seen(data)) return;
       const user = data.nickname || data.uniqueId || "viewer";
-      const msg = data.comment || data.content || "";
+      const msg = data.content || data.comment || data.text || "";
       if (!msg) return;
       win.webContents.send("tiktok-event", {
         type: "chat",
         user,
         message: `${user}: ${msg}`,
       });
-      enqueueSpeech(`${user} says ${msg}`);
+      const ttsName = safePsString(user) || data.uniqueId || "someone";
+      const ttsMsg = safePsString(msg);
+      if (ttsMsg) enqueueSpeech(`${ttsName} says ${ttsMsg}`);
     });
 
     connection.on("like", (data) => {
+      if (seen(data)) return;
       const user = data.nickname || data.uniqueId || "viewer";
       const total = data.total || data.totalLikeCount || data.likeCount || 0;
       win.webContents.send("tiktok-event", {
@@ -132,36 +151,61 @@ async function connectTiktok(win, username) {
     });
 
     connection.on("member", (data) => {
+      if (seen(data)) return;
       const user = data.nickname || data.uniqueId || "viewer";
       win.webContents.send("tiktok-event", {
         type: "follow",
         user,
         message: `${user} joined! ✅`,
       });
-      enqueueSpeech("SOUND::sounds/follow.mp3");
     });
 
     connection.on("follow", (data) => {
+      if (seen(data)) return;
       const user = data.nickname || data.uniqueId || "viewer";
+      const ttsName = safePsString(user) || data.uniqueId || "someone";
       win.webContents.send("tiktok-event", {
         type: "follow",
         user,
         message: `${user} followed! ✅`,
       });
       enqueueSpeech("SOUND::sounds/follow.mp3");
+      enqueueSpeech(`Thank you ${ttsName} for the follow!`);
     });
 
-    connection.on("share", (data) => {
-      const user = data.nickname || data.uniqueId || "viewer";
-      win.webContents.send("tiktok-event", {
-        type: "share",
-        user,
-        message: `${user} shared! 🔄`,
-      });
-      enqueueSpeech("SOUND::sounds/share.mp3");
+    connection.on("social", (data) => {
+      const displayType = (data.displayType || "").toLowerCase();
+      const key = (data.key || "").toLowerCase();
+      const isFollow = displayType.includes("follow") || key.includes("follow");
+      const isShare = displayType.includes("share") || key.includes("share");
+
+      if (isFollow) {
+        if (seen(data)) return;
+        const user = data.nickname || data.uniqueId || "viewer";
+        const ttsName = safePsString(user) || data.uniqueId || "someone";
+        win.webContents.send("tiktok-event", {
+          type: "follow",
+          user,
+          message: `${user} followed! ✅`,
+        });
+        enqueueSpeech("SOUND::sounds/follow.mp3");
+        enqueueSpeech(`Thank you ${ttsName} for the follow!`);
+      } else if (isShare) {
+        if (seen(data)) return;
+        const user = data.nickname || data.uniqueId || "viewer";
+        const ttsName = safePsString(user) || data.uniqueId || "someone";
+        win.webContents.send("tiktok-event", {
+          type: "share",
+          user,
+          message: `${user} shared! 🔄`,
+        });
+        enqueueSpeech("SOUND::sounds/share.mp3");
+        enqueueSpeech(`Thank you ${ttsName} for the share!`);
+      }
     });
 
     connection.on("gift", (data) => {
+      if (seen(data)) return;
       if (!data.repeatEnd && data.repeatCount > 1) return;
       const user = data.nickname || data.uniqueId || "viewer";
       const count = data.repeatCount || 1;

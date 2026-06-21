@@ -5,6 +5,7 @@ console.log("✅ Preload loaded");
 contextBridge.exposeInMainWorld("electronAPI", {
   // --- TikTok events from main -> React
   onTiktokEvent: (callback) => {
+    ipcRenderer.removeAllListeners("tiktok-event");
     const listener = (_event, data) => callback(data);
     ipcRenderer.on("tiktok-event", listener);
     return listener;
@@ -14,6 +15,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
 
   onTiktokStatus: (callback) => {
+    ipcRenderer.removeAllListeners("tiktok-status");
     const listener = (_event, data) => callback(data);
     ipcRenderer.on("tiktok-status", listener);
     return listener;
