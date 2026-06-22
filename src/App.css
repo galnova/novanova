@@ -584,8 +584,4 @@ padding: 4px;
   .settings-item strong {
     min-width: unset;
   }
-
-  .settings-item input {
-    /* width: 100%; */
-  }
 }
