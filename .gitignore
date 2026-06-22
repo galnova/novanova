@@ -1,1 +1,13 @@
 node_modules
+
+dist/
+/release
+/dist/win-unpacked
+/dist/*.asar
+
+# Secrets — never commit these
+.env
+
+# Claude Code files
+.claude/
+CLAUDE.md

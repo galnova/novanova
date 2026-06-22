@@ -1,0 +1,374 @@
+NovaNova – Launch & Usage Notes
+
+🔹 FIRST-TIME SETUP — API Keys & Credentials
+
+─────────────────────────────────────────────────────────────
+STEP 1 — Get a YouTube Data API Key (free)
+─────────────────────────────────────────────────────────────
+NovaNova connects to YouTube Live Chat using the YouTube Data API v3.
+You need a free API key from Google Cloud to use it.
+
+1. Go to https://console.cloud.google.com/
+2. Sign in with your Google account.
+3. Click "Select a project" at the top → then "New Project" → give it any name
+   (e.g. "NovaNova") → click Create.
+4. In the left menu go to: APIs & Services → Library.
+5. Search for "YouTube Data API v3" → click it → click Enable.
+6. In the left menu go to: APIs & Services → Credentials.
+7. Click "+ Create Credentials" at the top → choose "API key".
+8. Your API key will be displayed — copy it and keep it safe.
+   (Optional: click "Restrict key" → under API restrictions choose
+   "YouTube Data API v3" to limit its use to this app only.)
+
+Note: The free YouTube Data API v3 quota is ~10,000 units/day,
+which is more than enough for a typical stream session.
+
+─────────────────────────────────────────────────────────────
+STEP 2 — Find your YouTube Channel ID
+─────────────────────────────────────────────────────────────
+1. Go to https://studio.youtube.com
+2. In the left sidebar click Settings → Channel → Advanced settings.
+3. Copy the "Channel ID" value (starts with "UC...").
+
+─────────────────────────────────────────────────────────────
+STEP 3 — Enter your credentials in NovaNova
+─────────────────────────────────────────────────────────────
+1. Open NovaNova (npm start).
+2. Go to the Settings page inside the app.
+3. Paste your YouTube API Key into the "YouTube API Key" field.
+4. Paste your Channel ID into the "Channel ID" field.
+5. Click Save.
+Your key is stored locally on your machine only — never sent anywhere else.
+
+─────────────────────────────────────────────────────────────
+STEP 4 — Install dependencies & run (first time only)
+─────────────────────────────────────────────────────────────
+1. Install Node.js if you haven't: https://nodejs.org  (LTS version)
+2. Open a terminal in the project folder.
+3. Run:  npm install
+4. Run:  npm start
+The Electron window will open once the frontend is ready.
+
+─────────────────────────────────────────────────────────────
+
+🔹 Development Commands
+
+Start the full app (recommended)
+Runs signServer + Vite (frontend) + Electron together.
+npm start
+(npm run dev is identical — both work the same way)
+
+Opens the Electron window with your React UI.
+
+Connects to TikTok (main.js runs).
+
+Plays sounds & TTS when events happen.
+
+Run only the frontend (UI only, no TikTok)
+Useful if you just want to test the React interface in a browser.
+npm run vite
+
+Starts Vite dev server at http://localhost:5173
+
+Opens in your browser.
+
+Does not connect to TikTok or play sounds (Electron isn’t running).
+
+Run only Electron
+Launches the Electron shell without waiting for Vite.
+npm run electron
+
+If Vite isn’t already running → you’ll see a blank Electron screen.
+
+If Vite is running at localhost:5173 → it will load your app UI.
+
+Mainly used for debugging.
+
+🔹 Typical Workflow
+
+Edit code in React (App.jsx) or backend (main.js).
+
+Run: npm start
+
+Wait until the Electron window shows.
+
+Start a TikTok livestream from the username entered in the app UI.
+
+Confirm app status:
+
+🟢 Connected → bot is live.
+
+🔴 Disconnected → not live / username wrong.
+
+Test buttons in the UI to confirm sound & TTS.
+
+🔹 Where things run
+
+Electron / main.js → Connects to TikTok, plays sounds, runs TTS.
+
+Vite / React frontend → Displays UI (status bar, logs, test buttons).
+
+Sounds → Must be in sounds/ folder at project root, e.g.:
+project-root/
+main.js
+preload.js
+sounds/
+small-gift.mp3
+big-gift.mp3
+multi-gift.mp3
+follow.mp3
+share.mp3
+
+Keep sounds 5 seconds or under for best results.
+
+Recommend downloading short sound clips from 👉 https://www.myinstants.com/en/index/us/
+
+🔹 How to Add Your Own Sounds
+
+Go to 👉 https://www.myinstants.com/en/index/us/
+
+Find a sound effect you like (keep it short).
+
+Click Download MP3.
+
+Save it inside your project’s /sounds folder.
+
+Rename it to match one of the events:
+
+small-gift.mp3
+
+big-gift.mp3
+
+multi-gift.mp3
+
+follow.mp3
+
+share.mp3
+
+Restart the app (npm start).
+
+Use the Settings page to double-check or update file paths.
+
+🔹 Current Features
+
+Plays sounds & TTS for TikTok events (likes, gifts, follows, shares, chat).
+
+Test controls for simulating events (accordion opens by default).
+
+Switch between male (David) & female (Zira) voice.
+
+Toggle mute/unmute.
+
+Settings page:
+
+Change sound file paths.
+
+Instructions for where to put sound files.
+
+Notes about keeping files short.
+
+About page updated with developer info + PayPal donation CTA.
+
+🔹 Quick Debug Checklist
+
+If UI loads but no TikTok events → check username input.
+
+If no sounds play → confirm sounds/ folder exists at root.
+
+If no speech → check Windows PowerShell TTS is available.
+
+If Electron shows blank → make sure you started with npm start.
+
+🔹 Git Commands (Project Workflow)
+
+Initial setup
+git init
+git add .
+git commit -m "Initial commit - NovaNova"
+git branch -M main
+git remote add origin <your-repo-url>
+git push -u origin main
+
+Everyday workflow
+git status
+git add .
+git commit -m "Describe your changes here"
+git push
+git pull
+
+Branching workflow
+git checkout -b feature/sound-queue
+git checkout main
+git merge feature/sound-queue
+git branch -d feature/sound-queue
+
+Reset / rollback if needed
+git reset --hard
+git reset --soft HEAD~1
+git reset --hard HEAD~1
+
+Troubleshooting Git
+Undo a specific file before commit
+git checkout -- filename
+
+Discard all local changes (dangerous)
+git reset --hard
+
+Merge conflicts
+
+Git will mark conflict areas in files with >>>>>>> and <<<<<<<
+
+Manually edit files to keep what you want
+
+Then run:
+git add .
+git commit -m "Resolved merge conflict"
+
+Abort a merge if too messy
+git merge --abort
+
+Detached HEAD fix
+git checkout main
+If you want to keep changes:
+git checkout -b new-branch
+
+See commit history
+git log --oneline --graph --all --decorate
+
+Revert a commit safely (creates a new commit)
+git revert <commit-id>
+
+Stash work (save without committing)
+git stash
+git pull
+git stash pop
+
+Delete local branch
+git branch -d branch-name
+
+Delete remote branch
+git push origin --delete branch-name
+
+🔹 Packaging into a Windows .exe
+
+Before building, make sure:
+1. icon.ico exists in the project root (required by electron-builder).
+2. .env has your real TikTok cookies: TIKTOK_COOKIES="your_cookie_string"
+   - Get cookies from Chrome → F12 → Application → Cookies → tiktok.com
+   - Copy the sessionid value (or use EditThisCookie extension to export all)
+   - ⚠️ .env is in .gitignore — it will NOT be pushed to GitHub (by design).
+
+Build and package:
+npm run dist
+(This runs: vite build → electron-builder automatically)
+
+.exe installer appears in release/NovaNova-Setup-1.0.0.exe
+
+Current build files config (package.json):
+"files": [
+  "dist/**/*",
+  "main.js",
+  "preload.js",
+  "signServer.js",
+  ".env",
+  "sounds/**/*",
+  "package.json"
+]
+
+Note: signServer.js and .env are included so the packaged app can sign
+TikTok requests and load your cookies at runtime.
+
+🔹 Packaging into a Mac .app (DMG)
+
+Update package.json build config:
+"build": {
+"appId": "com.tiktok.bot",
+"productName": "NovaNova",
+"directories": { "output": "release" },
+"files": [
+"dist//*",
+"main.js",
+"preload.js",
+"sounds//*",
+"package.json"
+],
+"mac": {
+"target": "dmg",
+"icon": "icon.icns"
+}
+}
+
+Run: npm run dist
+
+.dmg appears in release/.
+⚠️ Must build on Mac for Mac output (cannot cross-compile from Windows).
+
+🔹 npm Commands (General Reference)
+
+npm install
+npm install package-name
+npm install --save-dev package-name
+npm uninstall package-name
+npm update
+
+NovaNova Notes
+Recent Updates
+
+✅ Sounds must be placed in /sounds folder at project root.
+
+✅ Settings page updated with instructions + sound file editing.
+
+✅ Accordion (Test Controls) now opens by default.
+
+✅ Font updated → Roboto on PC, SF Pro on Mac.
+
+✅ About page updated → Includes developer info + PayPal donation CTA.
+
+Future Improvements
+
+Prevent overlapping sounds (queue sounds so they play sequentially).
+
+Add option to toggle TikTok username inside UI.
+
+UI indicators for event type (icons, colors).
+
+Cross-platform packaging (Windows & Mac releases).
+
+🔹 Troubleshooting (App Issues)
+
+If npm start fails with “running scripts is disabled on this system” (PowerShell execution policy):
+→ Double-click start.bat instead — bypasses PowerShell entirely.
+→ Or fix permanently in PowerShell (run as Admin): Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+If npm run dev or npm start fails with “concurrently not recognized” → install it: npm install --save-dev concurrently wait-on
+
+If you see “Failed to resolve import 'react-router-dom'” → install it: npm install react-router-dom
+
+If you see “Failed to resolve import '@fortawesome/fontawesome-free/css/all.min.css'” → install it: npm install @fortawesome/fontawesome-free
+
+If sounds don’t play → confirm the /sounds folder exists and filenames match what the app expects.
+
+If TTS doesn’t work → make sure Windows PowerShell TTS is enabled (System.Speech).
+
+If Electron shows a blank screen → make sure you ran npm start (not just npm run electron).
+
+If the dist folder gets locked and refuses to delete → reboot into Safe Mode and remove it from there.
+
+🔹 Clean Reinstall Checklist
+
+Move out of any locked folder (cd ~ in PowerShell).
+
+If old project is stuck, just ignore it and clone fresh. Example:
+cd C:\Users\kjete\OneDrive\Desktop
+git clone https://github.com/YOUR-USERNAME/YOUR-REPO.git
+ novanova
+cd novanova
+
+Install all dependencies:
+npm install
+npm install react-router-dom @fortawesome/fontawesome-free concurrently wait-on
+
+Run the app:
+npm run dev (UI only) or npm start (full app).
+
+If it works, you can later clean up the old folder in Safe Mode.
