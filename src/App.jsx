@@ -70,9 +70,14 @@ function Home({ soundConfig }) {
       if (data.type === "follow") {
         setFollowCount((prev) => prev + 1);
         setRecentFollowers((prev) => [data.user, ...prev].slice(0, 5));
+        playAudio(soundConfig.follow);
       }
       if (data.type === "share") {
         setShareCount((prev) => prev + 1);
+        playAudio(soundConfig.share);
+      }
+      if (data.type === "gift") {
+        playAudio(soundConfig[data.soundKey] || soundConfig.smallGift);
       }
       if (data.type === "chat") {
         setChatCount((prev) => prev + 1);
@@ -97,10 +102,25 @@ function Home({ soundConfig }) {
     };
   }, []);
 
+  async function playAudio(filePath) {
+    if (!filePath || muted) return;
+    try {
+      const data = await window.electronAPI?.readSound(filePath);
+      if (!data) return;
+      const blob = new Blob([data], { type: "audio/mpeg" });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      audio.play();
+    } catch (e) {
+      console.error("Audio error:", e);
+    }
+  }
+
   const addTestEvent = (type, msg, sound = null, speak = false, user = null) => {
     const event = { type, message: msg };
     setEvents((prev) => [event, ...prev].slice(0, 50));
-    if (sound) window.electronAPI?.playSound(sound);
+    if (sound) playAudio(sound);
     if (speak) window.electronAPI?.speak(msg);
 
     if (type === "like") {
@@ -338,6 +358,7 @@ function Home({ soundConfig }) {
               addTestEvent("follow", "User654 followed! ✅", soundConfig.follow, false, "User654");
               window.electronAPI?.speak("Thank you User654 for the follow!");
             }}
+
           >
             <i className="fas fa-user-plus"></i> Test Follow
           </button>

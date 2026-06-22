@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
 import { exec } from "child_process";
-import player from "play-sound";
+import fs from "fs";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -14,7 +14,6 @@ const __dirname = path.dirname(__filename);
 let TTS_VOICE = "Microsoft Zira Desktop";
 let speechQueue = [];
 let isSpeaking = false;
-const audioPlayer = player();
 let isMuted = false;
 
 let tiktokConnection = null;
@@ -44,27 +43,12 @@ function speak(text) {
   });
 }
 
-function playSound(file) {
-  const fullPath = path.join(__dirname, file);
-  return new Promise((resolve) => {
-    audioPlayer.play(fullPath, (err) => {
-      if (err) console.error("Error playing sound:", err);
-      resolve();
-    });
-  });
-}
-
 async function processQueue() {
   if (isSpeaking || speechQueue.length === 0) return;
   isSpeaking = true;
   try {
     const item = speechQueue.shift();
-    if (item && item.startsWith("SOUND::")) {
-      await playSound(item.split("::")[1]);
-      await new Promise((r) => setTimeout(r, 300));
-    } else if (item) {
-      await speak(item);
-    }
+    if (item) await speak(item);
   } catch (err) {
     console.error("processQueue error:", err);
   } finally {
@@ -169,7 +153,6 @@ async function connectTiktok(win, username) {
         user,
         message: `${user} followed! ✅`,
       });
-      enqueueSpeech("SOUND::sounds/follow.mp3");
       enqueueSpeech(`Thank you ${ttsName} for the follow!`);
     });
 
@@ -188,7 +171,6 @@ async function connectTiktok(win, username) {
           user,
           message: `${user} followed! ✅`,
         });
-        enqueueSpeech("SOUND::sounds/follow.mp3");
         enqueueSpeech(`Thank you ${ttsName} for the follow!`);
       } else if (isShare) {
         if (seen(data)) return;
@@ -199,7 +181,6 @@ async function connectTiktok(win, username) {
           user,
           message: `${user} shared! 🔄`,
         });
-        enqueueSpeech("SOUND::sounds/share.mp3");
         enqueueSpeech(`Thank you ${ttsName} for the share!`);
       }
     });
@@ -209,16 +190,13 @@ async function connectTiktok(win, username) {
       if (!data.repeatEnd && data.repeatCount > 1) return;
       const user = data.nickname || data.uniqueId || "viewer";
       const count = data.repeatCount || 1;
-      let soundFile;
-      if (count >= 100) soundFile = "sounds/big-gift.mp3";
-      else if (count >= 10) soundFile = "sounds/multi-gift.mp3";
-      else soundFile = "sounds/small-gift.mp3";
+      const soundKey = count >= 100 ? "bigGift" : count >= 10 ? "multiGift" : "smallGift";
       win.webContents.send("tiktok-event", {
         type: "gift",
         user,
         message: `${user} sent a gift x${count} 🎁`,
+        soundKey,
       });
-      enqueueSpeech(`SOUND::${soundFile}`);
     });
 
     connection.on("disconnected", () => {
@@ -274,13 +252,22 @@ function createWindow() {
 
   if (!app.isPackaged) {
     win.loadURL("http://localhost:5173");
+    win.webContents.openDevTools();
   } else {
     win.loadFile(path.join(__dirname, "dist", "index.html"));
   }
 }
 
-ipcMain.on("play-sound", (_event, file) => enqueueSpeech(`SOUND::${file}`));
 ipcMain.on("speak-text", (_event, text) => enqueueSpeech(text));
+ipcMain.handle("read-sound", async (_event, filePath) => {
+  try {
+    const fullPath = path.isAbsolute(filePath) ? filePath : path.join(__dirname, filePath);
+    return await fs.promises.readFile(fullPath);
+  } catch (e) {
+    console.error("Sound file not found:", e.message);
+    return null;
+  }
+});
 ipcMain.on("set-voice", (_event, voice) => {
   if (voice === "Zira") TTS_VOICE = "Microsoft Zira Desktop";
   if (voice === "David") TTS_VOICE = "Microsoft David Desktop";

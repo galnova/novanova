@@ -25,7 +25,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
 
   // --- Controls React -> main
-  playSound: (file) => ipcRenderer.send("play-sound", file),
+  readSound: (filePath) => ipcRenderer.invoke("read-sound", filePath),
   speak: (text) => ipcRenderer.send("speak-text", text),
   setVoice: (voice) => ipcRenderer.send("set-voice", voice),
   setMute: (value) => ipcRenderer.send("set-mute", value),
