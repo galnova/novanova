@@ -1,15 +1,19 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap");
 
 body, .App, .sub-page {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Roboto",
-    "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Roboto", "Helvetica Neue", Arial, sans-serif;
   padding: 20px;
   background: #0d0d0d;
   color: #fff;
-  height: 100vh;
+  /* height: 100vh; */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+}
+
+p {
+    font-size: 16px;
+    line-height: 24px;
 }
 
 h1 {
@@ -22,7 +26,6 @@ h1 {
   border-bottom: solid 1px #00c8be;
 }
 
-/* --- Recent Followers --- */
 .recent-followers {
   background: #1d2a4d;
   border: 1px solid #3b82f6;
@@ -36,7 +39,7 @@ h1 {
 }
 
 .recent-followers-label {
-  color: #3b82f6;
+  color: #60a5fa;
   font-size: 13px;
   font-weight: bold;
   white-space: nowrap;
@@ -59,14 +62,13 @@ h1 {
   color: #93c5fd;
 }
 
-/* --- Controls --- */
 .controls {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
   gap: 10px;
-  margin: 24px 0 24px 0;
+  margin: 24px 0;
 }
 
 .controls button {
@@ -85,16 +87,6 @@ h1 {
   background: #eab308;
 }
 
-.controls button.mute-toggle {
-  background: #374151;
-  color: #fff;
-}
-
-.controls button.mute-toggle:hover {
-  background: #1f2937;
-}
-
-/* --- Test Controls --- */
 .test-controls {
   display: flex;
   flex-wrap: wrap;
@@ -120,11 +112,17 @@ h1 {
   background: #00c8be;
 }
 
-/* --- Events --- */
 .events {
   flex: 1;
-  overflow-y: auto;
   overflow: hidden;
+}
+
+.events i {
+  background: #dddb58;
+  color: #000000;
+padding: 4px;
+  border-radius: 4px;
+  margin-right: 8px;
 }
 
 .event {
@@ -135,21 +133,13 @@ h1 {
   line-height: 1.4;
 }
 
-/* Generic fallback styling */
-.event.chat { background: #1a1a1a; border-left: 4px solid #00f2ea; }
-.event.gift { background: #222; border-left: 4px solid #7dd3fc; }  /* fallback */
+.event.chat   { background: #1a1a1a; border-left: 4px solid #00f2ea; }
+.event.gift   { background: #222;    border-left: 4px solid #7dd3fc; }
 .event.follow { background: #1d2a4d; border-left: 4px solid #3b82f6; }
-.event.like { background: #2d1d4d; border-left: 4px solid #a855f7; }
-.event.error { background: #4d1d1d; border-left: 4px solid #ef4444; }
-.event.share { background: #1a2d1a; border-left: 4px solid #22c55e; }
+.event.like   { background: #2d1d4d; border-left: 4px solid #a855f7; }
+.event.error  { background: #4d1d1d; border-left: 4px solid #ef4444; }
+.event.share  { background: #1a2d1a; border-left: 4px solid #22c55e; }
 
-/* Specific gift types (if main.js sends them) */
-.event.small-gift { background: #222; border-left: 4px solid #7dd3fc; }
-.event.medium-gift { background: #333; border-left: 4px solid #34d399; }
-.event.big-gift { background: #2a1a1a; border-left: 4px solid #f87171; }
-.event.multi-gift { background: #453434; border-left: 4px solid #b97070; }
-
-/* --- Status header row --- */
 .status-header {
   display: flex;
   justify-content: space-between;
@@ -184,20 +174,18 @@ h1 {
   animation: pulse-red 1.5s infinite;
 }
 
-/* Pulse animations */
 @keyframes pulse-green {
-  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
-  70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  0%   { box-shadow: 0 0 0 0   rgba(34, 197, 94, 0.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);   }
+  100% { box-shadow: 0 0 0 0   rgba(34, 197, 94, 0);   }
 }
 
 @keyframes pulse-red {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
-  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  0%   { box-shadow: 0 0 0 0   rgba(239, 68, 68, 0.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);   }
+  100% { box-shadow: 0 0 0 0   rgba(239, 68, 68, 0);   }
 }
 
-/* --- Hamburger button --- */
 .hamburger {
   background: #facc15;
   border: none;
@@ -214,7 +202,6 @@ h1 {
   background: #eab308;
 }
 
-/* --- Drawer menu --- */
 .drawer {
   position: fixed;
   top: 0;
@@ -238,19 +225,17 @@ h1 {
   visibility: visible;
 }
 
-.drawer nav,
-.drawer-nav {
+.drawer nav {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.drawer nav a,
-.drawer-nav a {
+.drawer nav a {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #2b2b2b;          
+  background: #2b2b2b;
   color: #f5f5f5;
   text-decoration: none;
   font-size: 16px;
@@ -259,18 +244,16 @@ h1 {
   border-radius: 8px;
 }
 
-.drawer nav a i,
-.drawer-nav a i {
+.drawer nav a i {
   width: 18px;
   text-align: center;
-  color: #facc15;                
+  color: #facc15;
 }
 
-.drawer nav a:hover,
-.drawer-nav a:hover {
+.drawer nav a:hover {
   background: #353535;
   border-color: #4a4a4a;
-  color: #facc15;                
+  color: #facc15;
 }
 
 .drawer-close {
@@ -284,7 +267,6 @@ h1 {
   padding: 0;
 }
 
-/* --- Overlay --- */
 .overlay {
   position: fixed;
   top: 0;
@@ -303,7 +285,6 @@ h1 {
   pointer-events: auto;
 }
 
-/* --- Username Input --- */
 .username-input {
   display: flex;
   justify-content: center;
@@ -340,7 +321,7 @@ h1 {
   font-size: 15px;
   font-weight: bold;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition: background 0.2s ease;
   background: #facc15;
   color: #111;
 }
@@ -351,7 +332,7 @@ h1 {
 
 .username-input button.connected {
   background: #22c55e;
-  color: #fff;
+  color: #111;
 }
 
 .username-input button.error {
@@ -360,7 +341,6 @@ h1 {
   border: solid 1px #ccc;
 }
 
-/* --- Error Banner --- */
 .error-banner {
   margin-top: 10px;
   padding: 10px;
@@ -374,10 +354,9 @@ h1 {
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Like counter --- */
 .like-counter {
   text-align: center;
   margin: 16px 0;
@@ -387,14 +366,8 @@ h1 {
   color: #facc15;
 }
 
-/* --- Sub-page styling --- */
 .sub-page {
-  background: #0d0d0d;
-  color: #fff;
-  padding: 20px;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
 }
 
 .sub-page h1 {
@@ -424,7 +397,6 @@ h1 {
   background: #eab308;
 }
 
-/* --- Collapsible Test Section --- */
 .collapsible {
   background: #333;
   color: #fff;
@@ -446,7 +418,6 @@ h1 {
   background: #444;
 }
 
-/* --- Settings Page --- */
 .settings-section {
   margin-top: 20px;
   display: flex;
@@ -487,7 +458,6 @@ h1 {
   box-shadow: 0 0 6px rgba(0, 242, 234, 0.5);
 }
 
-/* --- Settings tip text --- */
 .settings-tip {
   background: #1e293b;
   border-left: 4px solid #00f2ea;
@@ -518,7 +488,7 @@ h1 {
   text-decoration: none;
   padding: 12px 20px;
   border-radius: 8px;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition: background 0.2s ease;
 }
 
 .donate-btn i {
@@ -535,7 +505,7 @@ h1 {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -549,7 +519,7 @@ h1 {
   color: #fff;
   width: 300px;
   text-align: center;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
   position: relative;
 }
 
@@ -568,26 +538,27 @@ h1 {
   margin-top: 0;
   margin-bottom: 16px;
 }
+
 .modal ul {
   list-style: none;
   padding: 0;
 }
+
 .modal ul li {
   margin: 8px 0;
   font-size: 16px;
 }
 
 .disconnect-btn {
-  background: #ef4444; /* red */
+  background: #dc2626;
   color: #fff;
 }
 
 .disconnect-btn:hover {
-  background: #dc2626; /* darker red */
+  background: #b91c1c;
 }
 
-/*-- Media Queries --*/
-@media (max-width: 500px) { 
+@media (max-width: 500px) {
   .username-input input {
     width: calc(100% - 22px);
     border-radius: 6px;
@@ -615,6 +586,6 @@ h1 {
   }
 
   .settings-item input {
-    width: 100%;
+    /* width: 100%; */
   }
 }

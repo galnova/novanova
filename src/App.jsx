@@ -56,6 +56,16 @@ function Home({ soundConfig }) {
   const [showTests, setShowTests] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
 
+  const EVENT_ICONS = {
+    chat: "fa-comment",
+    gift: "fa-gift",
+    follow: "fa-user-plus",
+    like: "fa-heart",
+    error: "fa-exclamation-circle",
+    share: "fa-share",
+    member: "fa-user",
+  };
+
   useEffect(() => {
     const eventHandler = (data) => {
       setEvents((prev) => [data, ...prev].slice(0, 50));
@@ -321,7 +331,7 @@ function Home({ soundConfig }) {
             onClick={() =>
               addTestEvent(
                 "gift",
-                "User456 sent a Rose 🌹",
+                "User456 sent a Rose",
                 soundConfig.smallGift
               )
             }
@@ -332,7 +342,7 @@ function Home({ soundConfig }) {
             onClick={() =>
               addTestEvent(
                 "gift",
-                "User789 sent a BIG gift 🎁",
+                "User789 sent a BIG gift",
                 soundConfig.bigGift
               )
             }
@@ -343,19 +353,19 @@ function Home({ soundConfig }) {
             onClick={() =>
               addTestEvent(
                 "gift",
-                "User999 sent a COMBO gift 🎉",
+                "User999 sent a COMBO gift",
                 soundConfig.multiGift
               )
             }
           >
             <i className="fas fa-gifts"></i> Test Multi Gift
           </button>
-          <button onClick={() => addTestEvent("like", "User321 liked ❤️")}>
+          <button onClick={() => addTestEvent("like", "User321 liked")}>
             <i className="fas fa-thumbs-up"></i> Test Like
           </button>
           <button
             onClick={() => {
-              addTestEvent("follow", "User654 followed! ✅", soundConfig.follow, false, "User654");
+              addTestEvent("follow", "User654 followed!", soundConfig.follow, false, "User654");
               window.electronAPI?.speak("Thank you User654 for the follow!");
             }}
 
@@ -364,7 +374,7 @@ function Home({ soundConfig }) {
           </button>
           <button
             onClick={() => {
-              addTestEvent("share", "User111 shared! 🔄", soundConfig.share);
+              addTestEvent("share", "User111 shared!", soundConfig.share);
               window.electronAPI?.speak("Thank you User111 for the share!");
             }}
           >
@@ -376,7 +386,8 @@ function Home({ soundConfig }) {
       <div className="events">
         {events.map((e, i) => (
           <div key={i} className={`event ${e.type}`}>
-            <strong>[{e.type}]</strong> {e.message || e.msg}
+            <i className={`fas ${EVENT_ICONS[e.type] || "fa-bell"}`}></i>{" "}
+            {e.message || e.msg}
           </div>
         ))}
       </div>
@@ -391,7 +402,7 @@ function Home({ soundConfig }) {
             >
               <i className="fas fa-times"></i>
             </button>
-            <h2>📊 Session Summary</h2>
+            <h2><i className="fas fa-chart-bar"></i> Session Summary</h2>
             <ul>
               <li>
                 <i className="fas fa-heart"></i> Likes: {likeCount}

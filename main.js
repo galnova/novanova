@@ -129,7 +129,7 @@ async function connectTiktok(win, username) {
       win.webContents.send("tiktok-event", {
         type: "like",
         user,
-        message: `${user} liked ❤️`,
+        message: `${user} liked`,
         likes: total,
       });
     });
@@ -140,7 +140,7 @@ async function connectTiktok(win, username) {
       win.webContents.send("tiktok-event", {
         type: "follow",
         user,
-        message: `${user} joined! ✅`,
+        message: `${user} joined!`,
       });
     });
 
@@ -151,7 +151,7 @@ async function connectTiktok(win, username) {
       win.webContents.send("tiktok-event", {
         type: "follow",
         user,
-        message: `${user} followed! ✅`,
+        message: `${user} followed!`,
       });
       enqueueSpeech(`Thank you ${ttsName} for the follow!`);
     });
@@ -169,7 +169,7 @@ async function connectTiktok(win, username) {
         win.webContents.send("tiktok-event", {
           type: "follow",
           user,
-          message: `${user} followed! ✅`,
+          message: `${user} followed!`,
         });
         enqueueSpeech(`Thank you ${ttsName} for the follow!`);
       } else if (isShare) {
@@ -179,7 +179,7 @@ async function connectTiktok(win, username) {
         win.webContents.send("tiktok-event", {
           type: "share",
           user,
-          message: `${user} shared! 🔄`,
+          message: `${user} shared!`,
         });
         enqueueSpeech(`Thank you ${ttsName} for the share!`);
       }
@@ -194,7 +194,7 @@ async function connectTiktok(win, username) {
       win.webContents.send("tiktok-event", {
         type: "gift",
         user,
-        message: `${user} sent a gift x${count} 🎁`,
+        message: `${user} sent a gift x${count}`,
         soundKey,
       });
     });
