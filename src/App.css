@@ -11,6 +11,10 @@ body, .App, .sub-page {
   flex-direction: column;
 }
 
+main {
+  border: solid 2px #facc15;
+}
+
 p {
     font-size: 16px;
     line-height: 24px;
@@ -21,21 +25,21 @@ h1 {
   text-align: center;
   margin-bottom: 0;
   font-weight: bold;
-  padding-bottom: 24px;
+  /* padding-bottom: 24px; */
   text-shadow: 0 0 6px rgba(0, 242, 234, 0.6);
-  border-bottom: solid 1px #00c8be;
+  /* border-bottom: solid 1px #00c8be; */
 }
 
 .recent-followers {
-  background: #1d2a4d;
-  border: 1px solid #3b82f6;
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin: 0 0 16px 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+    background: #1d2a4d;
+    border: 3px solid #3b82f6;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 0 0 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .recent-followers-label {
@@ -294,11 +298,11 @@ padding: 4px;
 }
 
 .username-input input {
-  padding: 12px;
+  padding: 11px;
   font-size: 15px;
-  border-radius: 6px;
+  /* border-radius: 6px;
   border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
+  border-bottom-right-radius: 0; */
   border: 1px solid #00c8be;
   width: 240px;
   background: #111;
@@ -315,9 +319,9 @@ padding: 4px;
 .username-input button {
   border: none;
   padding: 12px 18px;
-  border-radius: 6px;
+  /* border-radius: 6px;
   border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
+  border-bottom-left-radius: 0; */
   font-size: 15px;
   font-weight: bold;
   cursor: pointer;
@@ -364,6 +368,9 @@ padding: 4px;
   line-height: 48px;
   font-weight: bold;
   color: #facc15;
+  padding: 25px;
+  border-radius: 8px;
+  border: solid 2px #facc15;
 }
 
 .sub-page {
@@ -561,18 +568,18 @@ padding: 4px;
 @media (max-width: 500px) {
   .username-input input {
     width: calc(100% - 22px);
-    border-radius: 6px;
+    /* border-radius: 6px;
     border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
+    border-bottom-right-radius: 0; */
     padding: 10px;
   }
 
   .username-input button {
-    border-radius: 6px;
+    /* border-radius: 6px;
     border-top-left-radius: 0;
-    border-top-right-radius: 0;
+    border-top-right-radius: 0; */
     width: 100%;
-    border: solid 1px #facc15;
+    /* border: solid 1px #facc15; */
   }
 
   .settings-item {

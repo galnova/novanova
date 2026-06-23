@@ -138,22 +138,10 @@ async function connectTiktok(win, username) {
       if (seen(data)) return;
       const user = data.nickname || data.uniqueId || "viewer";
       win.webContents.send("tiktok-event", {
-        type: "follow",
+        type: "member",
         user,
         message: `${user} joined!`,
       });
-    });
-
-    connection.on("follow", (data) => {
-      if (seen(data)) return;
-      const user = data.nickname || data.uniqueId || "viewer";
-      const ttsName = safePsString(user) || data.uniqueId || "someone";
-      win.webContents.send("tiktok-event", {
-        type: "follow",
-        user,
-        message: `${user} followed!`,
-      });
-      enqueueSpeech(`Thank you ${ttsName} for the follow!`);
     });
 
     connection.on("social", (data) => {

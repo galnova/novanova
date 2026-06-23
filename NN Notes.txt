@@ -253,30 +253,40 @@ git push origin --delete branch-name
 
 Before building, make sure:
 1. icon.ico exists in the project root (required by electron-builder).
-2. .env has your real TikTok cookies: TIKTOK_COOKIES="your_cookie_string"
-   - Get cookies from Chrome → F12 → Application → Cookies → tiktok.com
-   - Copy the sessionid value (or use EditThisCookie extension to export all)
-   - ⚠️ .env is in .gitignore — it will NOT be pushed to GitHub (by design).
+2. .env has your real credentials (EULER_API_KEY and TIKTOK_COOKIES).
+   ⚠️ .env is in .gitignore — it will NOT be pushed to GitHub (by design).
 
 Build and package:
 npm run dist
 (This runs: vite build → electron-builder automatically)
 
-.exe installer appears in release/NovaNova-Setup-1.0.0.exe
+Output lands in: release\win-unpacked\NovaNova.exe
+The desktop shortcut already points there — no reinstall needed after a rebuild.
+
+If the build fails with a symlink error:
+→ Go to Settings → System → For developers → turn on Developer Mode
+→ Then run npm run dist again
 
 Current build files config (package.json):
 "files": [
   "dist/**/*",
   "main.js",
   "preload.js",
-  "signServer.js",
   ".env",
   "sounds/**/*",
   "package.json"
 ]
 
-Note: signServer.js and .env are included so the packaged app can sign
-TikTok requests and load your cookies at runtime.
+Note: .env is bundled so the packaged app can load your API key and
+TikTok cookies at runtime without needing a terminal.
+
+🔹 Everyday Rebuild Workflow (after making code changes)
+
+1. Open the project folder in VS Code.
+2. Open the terminal (Ctrl + `)
+3. Run: npm run dist
+4. Wait for it to finish — the desktop shortcut picks up the new build automatically.
+   No need to move files or update the shortcut.
 
 🔹 Packaging into a Mac .app (DMG)
 
@@ -372,3 +382,245 @@ Run the app:
 npm run dev (UI only) or npm start (full app).
 
 If it works, you can later clean up the old folder in Safe Mode.
+
+─────────────────────────────────────────────────────────────
+🔹 HOW THIS APP IS BUILT — File-by-File Guide
+    (Use this as a blueprint for future Electron + React apps)
+─────────────────────────────────────────────────────────────
+
+OVERVIEW
+────────
+This app has two separate "worlds" running at the same time:
+
+  1. MAIN PROCESS (Node.js / Electron) — runs on your machine.
+     Has full access to the OS: files, processes, network sockets.
+     File: main.js
+
+  2. RENDERER PROCESS (Chromium / React) — runs like a web page.
+     Has no OS access by default. This is the UI the user sees.
+     Files: src/App.jsx, src/App.css, src/main.jsx, index.html
+
+  3. PRELOAD BRIDGE — a thin script that safely connects the two.
+     File: preload.js
+
+The renderer can NEVER directly call Node.js or the OS.
+It can only talk to the main process through the preload bridge.
+Think of it like a bank teller window — the glass is the bridge.
+
+
+─────────────────────────────────────────────────────────────
+FILE: main.js  (Electron main process — the backend)
+─────────────────────────────────────────────────────────────
+This is the first file Electron runs. It:
+  - Creates the app window (BrowserWindow)
+  - Loads the UI (either from Vite dev server or built dist/ folder)
+  - Connects to TikTok via tiktok-live-connector
+  - Listens for TikTok events (chat, gift, follow, share, like, member)
+  - Runs TTS via PowerShell (System.Speech.SynthesizerSpeech)
+  - Reads sound files from disk and sends them to the renderer
+  - Handles IPC messages sent from the renderer (connect, disconnect, mute, etc.)
+
+Key concepts in main.js:
+  ipcMain.on("channel-name", handler)   → listen for a one-way message from renderer
+  ipcMain.handle("channel-name", handler) → listen for a two-way request (renderer awaits a response)
+  win.webContents.send("channel-name", data) → push data TO the renderer unprompted
+
+Pattern for connecting an external service:
+  1. Create the connection object
+  2. Register event listeners (.on("event", handler))
+  3. Call .connect()
+  4. Forward events to the renderer with win.webContents.send(...)
+
+
+─────────────────────────────────────────────────────────────
+FILE: preload.js  (The bridge — runs before the renderer loads)
+─────────────────────────────────────────────────────────────
+This file runs in a special context: it has access to both
+Electron's ipcRenderer AND the browser window's JS environment.
+
+It uses contextBridge.exposeInMainWorld("electronAPI", { ... })
+to attach a safe, controlled API to window.electronAPI.
+
+This is the ONLY way the React app can talk to the main process.
+Every function you want React to call must be listed here.
+
+  ipcRenderer.send("channel")        → fire-and-forget message to main
+  ipcRenderer.invoke("channel")      → async request to main (returns a Promise)
+  ipcRenderer.on("channel", handler) → listen for messages pushed FROM main
+
+Rule: If you add a new IPC channel in main.js, you must also
+expose it here before React can use it.
+
+
+─────────────────────────────────────────────────────────────
+FILE: src/main.jsx  (React entry point)
+─────────────────────────────────────────────────────────────
+The smallest file. Its only job is to mount the React app into
+the HTML page.
+
+  import { StrictMode } from "react"
+  import { createRoot } from "react-dom/client"
+  import App from "./App.jsx"
+
+  createRoot(document.getElementById("root")).render(<App />)
+
+You rarely touch this file. If you need global context providers
+(like Redux or a theme provider), wrap <App /> here.
+
+
+─────────────────────────────────────────────────────────────
+FILE: index.html  (The HTML shell Vite serves)
+─────────────────────────────────────────────────────────────
+A near-empty HTML file. Contains:
+  - <div id="root"></div>  ← React mounts into this
+  - <script type="module" src="/src/main.jsx"></script> ← entry point
+
+Vite reads this file and builds everything from it.
+You can add <meta> tags, a page title, or favicon links here.
+Do not add styles or logic here — keep those in React/CSS files.
+
+
+─────────────────────────────────────────────────────────────
+FILE: src/App.jsx  (The entire React UI)
+─────────────────────────────────────────────────────────────
+This is the main UI file. It uses React Router to split the app
+into multiple pages rendered inside a single window.
+
+Structure:
+  RootApp          → sets up the Router, holds shared state (soundConfig)
+  ├── Home         → main live view (events, controls, counters)
+  ├── About        → info page + donate link
+  └── Settings     → sound file path configuration
+
+  Drawer           → slide-out nav menu (used inside Home via HamburgerMenu)
+  HamburgerMenu    → the ☰ button that opens the Drawer
+
+Key React patterns used:
+  useState(initialValue)          → reactive variable (re-renders when changed)
+  useEffect(() => { }, [])        → runs once on mount; used to register IPC listeners
+  localStorage.getItem/setItem    → persists data across sessions (username, sound paths)
+
+How the renderer talks to Electron:
+  window.electronAPI.connectTiktok(username)    → triggers connection in main.js
+  window.electronAPI.speak(text)                → triggers TTS in main.js
+  window.electronAPI.readSound(filePath)        → reads a file; returns raw bytes
+  window.electronAPI.onTiktokEvent(callback)    → fires when main pushes a TikTok event
+
+Sound playback pattern (HTML5 Audio from raw bytes):
+  const bytes = await window.electronAPI.readSound("sounds/follow.mp3")
+  const blob  = new Blob([bytes], { type: "audio/mpeg" })
+  const url   = URL.createObjectURL(blob)
+  const audio = new Audio(url)
+  audio.onended = () => URL.revokeObjectURL(url)   ← clean up memory
+  audio.play()
+
+This approach works in Electron's renderer without needing
+file:// access or nodeIntegration, and respects the mute state.
+
+
+─────────────────────────────────────────────────────────────
+FILE: src/App.css  (All styles)
+─────────────────────────────────────────────────────────────
+Standard CSS imported directly into App.jsx.
+Vite bundles it automatically — no webpack config needed.
+
+Conventions used in this app:
+  - Dark theme: background #0d0d0d, text #fff
+  - Accent color: #00f2ea (TikTok cyan)
+  - Event cards colored by type (follow = blue, gift = sky, like = purple, etc.)
+  - Font Awesome icons loaded via npm (@fortawesome/fontawesome-free)
+    and imported as a CSS file: import "@fortawesome/fontawesome-free/css/all.min.css"
+  - Responsive layout via flexbox + flex-wrap
+  - Media query at 500px for mobile stacking
+
+
+─────────────────────────────────────────────────────────────
+FILE: vite.config.js  (Vite build tool configuration)
+─────────────────────────────────────────────────────────────
+Minimal config. Tells Vite to:
+  - Use the React plugin (handles JSX transform)
+  - Serve the dev server on port 5173
+
+In dev mode: Vite serves files from memory with hot reload.
+In production: Vite bundles everything into dist/ (one JS file, one CSS file).
+
+If you ever need path aliases (e.g. @/components/...) or
+environment variable prefixes, configure them here.
+
+
+─────────────────────────────────────────────────────────────
+FILE: package.json  (Project manifest)
+─────────────────────────────────────────────────────────────
+Defines the project name, version, scripts, and dependencies.
+
+  "main": "main.js"       → tells Electron which file to run first
+  "type": "module"        → enables ES module syntax (import/export) in .js files
+
+Scripts:
+  npm start / npm run dev → runs Vite + Electron together via concurrently
+  npm run build           → Vite builds the React app into dist/
+  npm run dist            → build + package into a Windows .exe via electron-builder
+
+Dependencies vs devDependencies:
+  dependencies    → packages the running app needs (dotenv, tiktok-live-connector, react, etc.)
+  devDependencies → packages only needed to build/run in dev (vite, electron, electron-builder)
+  NOTE: electron itself goes in devDependencies — electron-builder requires this.
+
+
+─────────────────────────────────────────────────────────────
+FILE: .env  (Environment variables — never commit this)
+─────────────────────────────────────────────────────────────
+Stores secrets: API keys, session tokens.
+Loaded in main.js with: dotenv.config()
+Accessed with: process.env.YOUR_KEY_NAME
+
+Rules:
+  - Always add .env to .gitignore before first commit
+  - Never push it to GitHub
+  - If you accidentally push it, rotate all keys immediately
+
+Format:
+  KEY_NAME=value
+  ANOTHER_KEY=value
+
+
+─────────────────────────────────────────────────────────────
+🔹 BLUEPRINT — Starting a New App Like This
+─────────────────────────────────────────────────────────────
+
+1. Scaffold the project
+   npm create vite@latest my-app -- --template react
+   cd my-app
+   npm install
+
+2. Add Electron
+   npm install --save-dev electron concurrently wait-on
+
+3. Update package.json
+   - Add "main": "main.js"
+   - Add "type": "module"
+   - Add scripts:
+       "start": "concurrently -k \"vite\" \"npx wait-on http://localhost:5173 && electron .\""
+
+4. Create main.js
+   - Import app, BrowserWindow from electron
+   - In dev: win.loadURL("http://localhost:5173")
+   - In prod: win.loadFile(path.join(__dirname, "dist", "index.html"))
+
+5. Create preload.js
+   - Use contextBridge.exposeInMainWorld("electronAPI", { ... })
+   - Expose only what the renderer needs
+
+6. Add to BrowserWindow webPreferences:
+   contextIsolation: true
+   nodeIntegration: false
+   preload: path.resolve(__dirname, "preload.js")
+
+7. Build your UI in src/App.jsx
+   - Call window.electronAPI.yourMethod() to reach the backend
+   - Register IPC listeners in useEffect with [] dependency
+
+8. Add .env + .gitignore before first git commit
+
+That's the full pattern. Every feature follows the same flow:
+  React calls electronAPI → preload sends IPC → main.js handles it → main.js sends result back
