@@ -5,12 +5,12 @@
   "main": "main.cjs",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k \"vite\" \"npx wait-on http://localhost:5173 && electron .\"",
+    "dev": "concurrently -k \"vite\" \"npx wait-on http://localhost:5173 && node scripts/run-electron.cjs\"",
     "vite": "vite",
-    "electron": "electron .",
+    "electron": "node scripts/run-electron.cjs",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "concurrently -k \"vite\" \"npx wait-on http://localhost:5173 && electron .\"",
+    "start": "concurrently -k \"vite\" \"npx wait-on http://localhost:5173 && node scripts/run-electron.cjs\"",
     "test": "echo \"No tests configured\"",
     "dist": "npm run build && electron-builder"
   },
