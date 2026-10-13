@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  BrowserRouter as Router,
+  HashRouter as Router,
   Routes,
   Route,
   Link,
@@ -58,6 +58,16 @@ function Home({ soundConfig }) {
   const [sessionDuration, setSessionDuration] = useState(0);
   const sessionStartRef = useRef(null);
 
+  const soundConfigRef = useRef(soundConfig);
+  useEffect(() => {
+    soundConfigRef.current = soundConfig;
+  }, [soundConfig]);
+
+  const mutedRef = useRef(muted);
+  useEffect(() => {
+    mutedRef.current = muted;
+  }, [muted]);
+
   const EVENT_ICONS = {
     chat: "fa-comment",
     gift: "fa-gift",
@@ -85,14 +95,14 @@ function Home({ soundConfig }) {
       if (data.type === "follow") {
         setFollowCount((prev) => prev + 1);
         setRecentFollowers((prev) => [data.user, ...prev].slice(0, 5));
-        playAudio(soundConfig.follow);
+        playAudio(soundConfigRef.current.follow);
       }
       if (data.type === "share") {
         setShareCount((prev) => prev + 1);
-        if (!isSpamShare) playAudio(soundConfig.share);
+        if (!isSpamShare) playAudio(soundConfigRef.current.share);
       }
       if (data.type === "gift") {
-        playAudio(soundConfig[data.soundKey] || soundConfig.smallGift);
+        playAudio(soundConfigRef.current[data.soundKey] || soundConfigRef.current.smallGift);
       }
       if (data.type === "chat") {
         setChatCount((prev) => prev + 1);
@@ -121,7 +131,7 @@ function Home({ soundConfig }) {
   }, []);
 
   async function playAudio(filePath) {
-    if (!filePath || muted) return;
+    if (!filePath || mutedRef.current) return;
     try {
       const data = await window.electronAPI?.readSound(filePath);
       if (!data) return;
