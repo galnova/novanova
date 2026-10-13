@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
-const { execFile } = require("child_process");
+const { spawn } = require("child_process");
+const readline = require("readline");
 const fs = require("fs");
 const dotenv = require("dotenv");
 
@@ -22,29 +23,101 @@ function safePsString(str = "") {
     .trim();
 }
 
-const TTS_SCRIPT =
+// Long-running PowerShell process that speaks one request per line of
+// stdin and prints "DONE" after each. Spawning a fresh PowerShell per
+// chat message (the old approach) adds well over half a second of
+// startup overhead each time, which let the speech queue fall behind
+// during busy chat and silently drop messages (see enqueueSpeech).
+// Keeping one process alive removes that overhead almost entirely.
+const TTS_SERVER_SCRIPT =
   "[Console]::InputEncoding = [System.Text.Encoding]::UTF8; " +
-  "$text = [Console]::In.ReadToEnd(); " +
-  "if (-not $text) { exit }; " +
+  "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; " +
   "Add-Type -AssemblyName System.Speech; " +
   "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; " +
-  "try { $s.SelectVoice($env:NOVANOVA_TTS_VOICE) } catch {}; " +
-  "$s.Speak($text);";
+  "$currentVoice = $null; " +
+  "while ($true) { " +
+  "  $line = [Console]::In.ReadLine(); " +
+  "  if ($null -eq $line) { break }; " +
+  "  if ($line) { " +
+  "    try { " +
+  "      $req = $line | ConvertFrom-Json; " +
+  "      if ($req.voice -and $req.voice -ne $currentVoice) { " +
+  "        try { $s.SelectVoice($req.voice); $currentVoice = $req.voice } catch {} " +
+  "      }; " +
+  "      $pb = New-Object System.Speech.Synthesis.PromptBuilder; " +
+  "      foreach ($seg in $req.segments) { " +
+  "        if ($seg.p) { $pb.AppendTextWithPronunciation($seg.t, $seg.p) } " +
+  "        else { $pb.AppendText($seg.t) } " +
+  "      }; " +
+  "      $s.Speak($pb); " +
+  "    } catch {} " +
+  "  }; " +
+  "  Write-Output 'DONE'; " +
+  "}";
+
+let ttsProcess = null;
+let ttsDoneQueue = [];
+
+function startTtsProcess() {
+  const proc = spawn(
+    "powershell",
+    ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", TTS_SERVER_SCRIPT],
+    { stdio: ["pipe", "pipe", "pipe"] }
+  );
+  readline.createInterface({ input: proc.stdout }).on("line", (line) => {
+    if (line.trim() === "DONE") {
+      const resolve = ttsDoneQueue.shift();
+      if (resolve) resolve();
+    }
+  });
+  proc.stderr.on("data", () => {});
+  proc.on("exit", () => {
+    if (ttsProcess === proc) ttsProcess = null;
+    const pending = ttsDoneQueue;
+    ttsDoneQueue = [];
+    pending.forEach((resolve) => resolve());
+  });
+  proc.on("error", (err) => {
+    console.error("TTS process error:", err);
+  });
+  return proc;
+}
+
+function getTtsProcess() {
+  if (!ttsProcess) ttsProcess = startTtsProcess();
+  return ttsProcess;
+}
+
+// "live" is a heteronym: System.Speech's default guess pronounces it to
+// rhyme with "give" (the verb). We always want the broadcast sense, to
+// rhyme with "strive" (like "Saturday Night Live"), so force it with an
+// explicit IPA pronunciation instead of letting the engine's heuristics
+// decide per-sentence. AppendTextWithPronunciation requires true IPA
+// characters with no separators (e.g. "ɪ", not ascii "I" or "ih1").
+const LIVE_PRONUNCIATION = "laɪv";
+
+function buildTtsSegments(text) {
+  return text
+    .split(/\b(live)\b/i)
+    .filter((part) => part.length > 0)
+    .map((part) =>
+      /^live$/i.test(part) ? { t: part, p: LIVE_PRONUNCIATION } : { t: part }
+    );
+}
 
 function speak(text) {
   return new Promise((resolve) => {
     const safe = safePsString(text);
     if (!safe) { resolve(); return; }
-    const child = execFile(
-      "powershell",
-      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", TTS_SCRIPT],
-      { env: { ...process.env, NOVANOVA_TTS_VOICE: TTS_VOICE } },
-      (err) => {
-        if (err) console.error("TTS Error:", err);
-        resolve();
-      }
-    );
-    child.stdin.end(safe, "utf8");
+    const payload = JSON.stringify({ voice: TTS_VOICE, segments: buildTtsSegments(safe) });
+    try {
+      const proc = getTtsProcess();
+      ttsDoneQueue.push(resolve);
+      proc.stdin.write(payload + "\n");
+    } catch (err) {
+      console.error("TTS Error:", err);
+      resolve();
+    }
   });
 }
 
@@ -62,9 +135,13 @@ async function processQueue() {
   }
 }
 
+const SPEECH_QUEUE_MAX = 30;
+
 function enqueueSpeech(text) {
   if (isMuted) return;
-  if (speechQueue.length >= 8) speechQueue.splice(0, speechQueue.length - 7);
+  if (speechQueue.length >= SPEECH_QUEUE_MAX) {
+    speechQueue.splice(0, speechQueue.length - (SPEECH_QUEUE_MAX - 1));
+  }
   speechQueue.push(text);
   processQueue();
 }
@@ -126,6 +203,11 @@ async function connectTiktok(win, username) {
       return streak.count > SHARE_SPAM_THRESHOLD;
     }
 
+    // Viewers drop these compliment call-outs a lot; answer with a
+    // follow nudge instead of reading the raw slang back out loud.
+    const COMPLIMENT_REGEX = /\bg+y+a+t+\b|\bcakes?\b|\bo+u*\s*shi+\b/i;
+    const COMPLIMENT_REPLY = "Please follow Greyvoth and thanks for the compliments.";
+
     connection.on("chat", (data) => {
       if (seen(data)) return;
       const user = data.nickname || data.uniqueId || "viewer";
@@ -136,6 +218,10 @@ async function connectTiktok(win, username) {
         user,
         message: `${user}: ${msg}`,
       });
+      if (COMPLIMENT_REGEX.test(msg)) {
+        enqueueSpeech(COMPLIMENT_REPLY);
+        return;
+      }
       const ttsName = safePsString(user) || data.uniqueId || "someone";
       const ttsMsg = safePsString(msg);
       enqueueSpeech(ttsMsg ? `${ttsName} says ${ttsMsg}` : `${ttsName} sent a message`);
@@ -325,4 +411,8 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
+});
+
+app.on("before-quit", () => {
+  if (ttsProcess) ttsProcess.kill();
 });
